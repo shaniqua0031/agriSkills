@@ -1,0 +1,97 @@
+# yaml-language-server: $schema=https://render.com/schema/render.yaml.json
+#
+# Render Blueprint for AgriSkills Passport.
+#   agriskills-api : Express + Prisma API (Server/). Uses the existing Neon Postgres database.
+#   agriskills-app : Expo web app (mobile/), built once and served as a static site.
+#
+# The URLs below assume Render gives the services these exact names
+# (https://agriskills-api.onrender.com and https://agriskills-app.onrender.com).
+# If Render adds a suffix because a name is taken, update the four URL values below and redeploy.
+#
+# Values marked "sync: false" are secrets: Render asks for them when you create the Blueprint
+# and never stores them in this file.
+
+services:
+  # ---------- API ----------
+  - type: web
+    name: agriskills-api
+    runtime: node
+    region: ohio            # next to the Neon database (AWS us-east-2)
+    plan: free
+    rootDir: Server
+    buildCommand: npm ci && npx prisma generate
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    buildFilter:
+      paths:
+        - Server/**
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      # Render sits in front of the app as one proxy hop; needed for per-visitor rate limits.
+      - key: TRUST_PROXY
+        value: "1"
+
+      # Address put in share links and QR codes. The server refuses to start in production without it.
+      - key: PUBLIC_BASE_URL
+        value: https://agriskills-api.onrender.com
+      # Where the "Open the app" button and password-reset emails point.
+      - key: PUBLIC_APP_URL
+        value: https://agriskills-app.onrender.com
+      - key: PASSWORD_RESET_URL
+        value: https://agriskills-app.onrender.com/forgot-password
+
+      # Login sessions. A new random value is fine (everyone just logs in again).
+      - key: JWT_SECRET
+        generateValue: true
+
+      # --- Secrets you paste in when creating the Blueprint ---
+      # Neon connection string (same as DATABASE_URL in Server/.env).
+      - key: DATABASE_URL
+        sync: false
+      # MUST be the same value as in Server/.env, or existing credentials fail verification.
+      - key: CREDENTIAL_SIGNING_SECRET
+        sync: false
+
+      # Evidence photos (optional). Leave blank to switch photo uploads off.
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+
+      # Password-reset emails (optional). Use Gmail (SMTP_USER + App Password) or Resend.
+      # Leave blank to switch password reset off.
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+
+  # ---------- Web app ----------
+  - type: web
+    name: agriskills-app
+    runtime: static
+    rootDir: mobile
+    buildCommand: npm ci && npx expo export --platform web
+    staticPublishPath: dist
+    autoDeployTrigger: commit
+    buildFilter:
+      paths:
+        - mobile/**
+    # Single-page app: every path (e.g. /learner, /forgot-password) loads index.html.
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: EXPO_ROUTER_APP_ROOT
+        value: src/app
+      # Built into the app: the address of the API above.
+      - key: EXPO_PUBLIC_API_URL
+        value: https://agriskills-api.onrender.com

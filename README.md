@@ -67,3 +67,17 @@ On Windows PowerShell, if you get "running scripts is disabled on this system", 
 The server requires `DATABASE_URL` in `Server/.env` (PostgreSQL on Neon) and refuses to start without it. All accounts, credentials and share links are stored there. The in-memory store in `Server/src/app.ts`, with its fictional accounts, is used only by the automated tests (`npm test`).
 
 To set up a new, empty database, run `cd Server && npm run prisma:push`. `prisma:push` synchronizes the schema without creating a migration history; review its output and do not accept any proposed data-loss operation.
+
+## Deploy to Render (Blueprint)
+`render.yaml` creates two services: **agriskills-api** (the Express API in `Server/`, in the `ohio` region next to the Neon database) and **agriskills-app** (the Expo web app in `mobile/`, built as a static site).
+
+1. Push the repo to GitHub, including `render.yaml`.
+2. In the Render Dashboard, go to **New → Blueprint**, connect the GitHub repo and select it.
+3. Render asks for the secret values:
+   - `DATABASE_URL`: the Neon connection string from `Server/.env`.
+   - `CREDENTIAL_SIGNING_SECRET`: **must be the same value as in `Server/.env`**, or existing credentials fail verification.
+   - Cloudinary and SMTP keys are optional. Without them, evidence photos and password-reset emails are switched off.
+4. Click **Apply** and wait for both services to go live.
+5. Check that the URLs are `https://agriskills-api.onrender.com` and `https://agriskills-app.onrender.com`. If Render added a suffix to either name, update the URLs in `render.yaml` and push again.
+
+On the free plan the API sleeps after 15 minutes without traffic, so the first request after that takes about a minute.
