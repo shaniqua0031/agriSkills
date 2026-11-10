@@ -12,7 +12,11 @@ There are no built-in accounts. Open the app, tap **Create an account**, choose 
   - The command `npm run issuer:approve -- name@org.com` still works as a backup.
 - **Forgot password:** tap **Forgot password?** and enter your email. The app emails a one-time reset link; opening it takes you directly to **New password** and **Confirm new password**. Links expire after 15 minutes and work once. The request response does not reveal whether an email has an account.
 - **Remember me** (ticked by default) keeps you logged in after a refresh or restart. The login is saved in the phone's secure storage, or in the browser on the web, and expires after 7 days. Untick it on shared computers.
-- **Employers** don't need an account. They can use **Verify a credential** on the login page and paste a share link.
+- **Employers** don't need an account: anyone can use **Verify a credential** on the login page and paste a share link.
+  Employers can also sign up (role **Employer**) for a dashboard that saves each check to a private **Checked** list,
+  with their own notes and a **Check again** button that shows the credential's current status (for example, revoked
+  or link turned off). The share token itself is never stored. This needs the `EmployerCheck` table: run
+  `npx prisma db push` in `Server/` once.
 - **Rate limits:** login is blocked for 15 minutes after 10 failed attempts. Sign-up, codes and password resets are also limited.
 
 **Emails (password-reset links)** can be sent two ways, set in `Server/.env`:

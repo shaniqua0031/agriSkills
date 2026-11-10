@@ -10,12 +10,13 @@ import { PasswordStrength } from '@/components/auth/password-strength';
 import { useAuth } from '@/context/auth';
 import { dashboardFor, validateEmail, validateNewPassword } from '@/lib/auth-helpers';
 
-type Role = 'LEARNER' | 'ISSUER';
+type Role = 'LEARNER' | 'ISSUER' | 'EMPLOYER';
 type Errors = { name?: string; email?: string; password?: string; confirm?: string; privacy?: string };
 
 const ROLES: { value: Role; title: string; description: string }[] = [
   { value: 'LEARNER', title: 'Learner', description: 'Keep and share my skills' },
   { value: 'ISSUER', title: 'Issuer', description: 'Training provider issuing credentials' },
+  { value: 'EMPLOYER', title: 'Employer', description: "Check applicants' credentials" },
 ];
 
 export default function RegisterScreen() {
@@ -90,7 +91,7 @@ export default function RegisterScreen() {
         value={name}
         onChangeText={(value) => { setName(value); clear('name'); }}
         error={errors.name}
-        placeholder={role === 'ISSUER' ? 'Organisation or trainer name' : 'Your full name'}
+        placeholder={role === 'ISSUER' ? 'Organisation or trainer name' : role === 'EMPLOYER' ? 'Your name or farm / company name' : 'Your full name'}
         autoComplete="name"
         textContentType="name"
         returnKeyType="next"
@@ -181,11 +182,11 @@ const styles = StyleSheet.create({
   banner: { backgroundColor: '#fdecea', borderRadius: 12, padding: 12, marginBottom: 14, borderLeftWidth: 4, borderLeftColor: '#b42318' },
   bannerText: { color: '#8a1c12', fontSize: 14, lineHeight: 20 },
   label: { color: '#353535', fontSize: 13, fontWeight: '700', marginBottom: 6 },
-  roleRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
+  roleRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   note: { color: '#5c4a00', backgroundColor: 'rgba(255, 244, 214, 0.95)', borderRadius: 10, padding: 10, fontSize: 13, lineHeight: 18, marginBottom: 14 },
   checkLabel: { color: '#353535', fontSize: 14, lineHeight: 20 },
   inlineLink: { color: '#1e1e1e', fontWeight: '700', textDecorationLine: 'underline' },
-  role: { flex: 1, backgroundColor: '#ffffff', borderWidth: 1.5, borderColor: '#dfdfdf', borderRadius: 12, padding: 12 },
+  role: { flexGrow: 1, flexBasis: 0, minWidth: 92, backgroundColor: '#ffffff', borderWidth: 1.5, borderColor: '#dfdfdf', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 10 },
   roleSelected: { borderColor: '#1e1e1e', backgroundColor: '#f3f3f3' },
   roleTitle: { color: '#353535', fontWeight: '800', fontSize: 15 },
   roleTitleSelected: { color: '#1e1e1e' },

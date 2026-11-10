@@ -10,6 +10,7 @@ import { networkInterfaces } from 'node:os';
 
 import { computeCredentialStatus, type Role, type CredentialRecord } from './domain.js';
 import { createEvidenceRouter } from './evidence.js';
+import { createEmployerRouter } from './employer.js';
 import { createAccountCodes } from './account-codes.js';
 import {
   SHARE_TOKEN_PATTERN,
@@ -608,8 +609,10 @@ async function verifyShareToken(token: string | undefined) {
   if (!token || !SHARE_TOKEN_PATTERN.test(token)) {
     return { result: 'NOT_FOUND' as VerificationResult };
   }
+  return verifyShareLink(await findShareLink({ tokenHash: hashShareToken(token) }));
+}
 
-  const link = await findShareLink({ tokenHash: hashShareToken(token) });
+async function verifyShareLink(link: ShareLink | undefined) {
   if (!link) return { result: 'NOT_FOUND' as VerificationResult };
 
   const credential = await findCredential({ id: link.credentialId });
@@ -753,8 +756,8 @@ app.post('/auth/register', registerRateLimit, async (req, res) => {
     return res.status(400).json({ error: 'Enter a valid name and email, and a password of at least 8 characters.' });
   }
 
-  if (!['LEARNER', 'ISSUER'].includes(role)) {
-    return res.status(400).json({ error: 'Choose either Learner or Issuer.' });
+  if (!['LEARNER', 'ISSUER', 'EMPLOYER'].includes(role)) {
+    return res.status(400).json({ error: 'Choose Learner, Issuer or Employer.' });
   }
 
   if (acceptedPrivacy !== true) {
@@ -1202,6 +1205,19 @@ app.use(createEvidenceRouter({
     return user && { id: user.id, name: user.name, role: user.role, approved: Boolean(user.issuerApprovedAt) };
   },
   urlSigningSecret: jwtSecret,
+}));
+
+// Employers check shared credential links and keep a private list of who they checked.
+app.use(createEmployerRouter({
+  prisma,
+  authMiddleware,
+  requireRole,
+  verifyToken: async (token) => {
+    const verification = await verifyShareToken(token);
+    return { shareLinkId: verification.link?.id ?? null, verification: makePublicVerificationResponse(verification) };
+  },
+  verifyLinkId: async (shareLinkId) =>
+    makePublicVerificationResponse(await verifyShareLink(await findShareLink({ id: shareLinkId }))),
 }));
 
 app.use((error: unknown, _req: express.Request, res: express.Response, next: express.NextFunction) => {

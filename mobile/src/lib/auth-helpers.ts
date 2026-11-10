@@ -15,10 +15,11 @@ export function validateNewPassword(password: string) {
   return '';
 }
 
-/** Where each role lands after signing in. Roles without a dashboard yet return null. */
+/** Where each role lands after signing in. Unknown roles return null. */
 export function dashboardFor(role: AuthUser['role']) {
   if (role === 'LEARNER') return '/learner' as const;
   if (role === 'ISSUER') return '/issuer' as const;
   if (role === 'ADMIN') return '/admin' as const;
+  if (role === 'EMPLOYER') return '/employer' as const;
   return null;
 }

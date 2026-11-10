@@ -24,7 +24,7 @@ type AuthContextValue = {
   login: (email: string, password: string, remember: boolean) => Promise<AuthUser>;
   /** Creates the account and logs the user straight in. */
   register: (
-    input: { name: string; email: string; password: string; role: 'LEARNER' | 'ISSUER'; acceptedPrivacy: boolean },
+    input: { name: string; email: string; password: string; role: 'LEARNER' | 'ISSUER' | 'EMPLOYER'; acceptedPrivacy: boolean },
     remember: boolean,
   ) => Promise<AuthUser>;
   /** Stores a session returned by the server (e.g. after email verification). */

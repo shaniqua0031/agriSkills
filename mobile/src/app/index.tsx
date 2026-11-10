@@ -110,7 +110,7 @@ export default function LoginScreen() {
         </Link>
       </View>
 
-      {/* Employers don't need an account: send them straight to credential verification. */}
+      {/* Checking a credential needs no account (employers can also sign up to keep a list of checks). */}
       <Link href="/verify-credential" asChild>
         <Pressable accessibilityRole="link" style={styles.employer}>
           <Text style={styles.employerTitle}>Checking someone’s credential?</Text>

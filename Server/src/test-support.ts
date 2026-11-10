@@ -6,7 +6,7 @@ import { testing } from './app.js';
 let counter = 0;
 
 /** Signs up (which logs the user straight in) and returns the session. */
-export async function registerVerified(baseUrl: string, prefix: string, role: 'LEARNER' | 'ISSUER', options: { approve?: boolean } = {}) {
+export async function registerVerified(baseUrl: string, prefix: string, role: 'LEARNER' | 'ISSUER' | 'EMPLOYER', options: { approve?: boolean } = {}) {
   counter += 1;
   const email = `${prefix}-${Date.now()}-${counter}@example.com`;
   const registered = await fetch(`${baseUrl}/auth/register`, {

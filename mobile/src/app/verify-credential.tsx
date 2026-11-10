@@ -6,48 +6,11 @@ import { AuthButton } from '@/components/auth/auth-button';
 import { AuthShell } from '@/components/auth/auth-shell';
 import { FormField } from '@/components/auth/form-field';
 import { API_BASE_URL } from '@/lib/api';
+import { extractToken, formatDate, statusStyle, type VerificationResult as Result } from '@/lib/verification';
 
-// Employers and other verifiers don't need an account: they paste the link (or code) the
-// learner shared, and see the same public result as the link's own verification page.
-
-type Result = {
-  valid: boolean;
-  status: string;
-  message: string;
-  learner: { name: string } | null;
-  credential: {
-    title: string;
-    issuer: string;
-    issueDate: string;
-    expiryDate: string | null;
-    publicId: string;
-    skills: string[];
-  } | null;
-  linkExpiresAt: string | null;
-};
-
-const TOKEN = /^[A-Za-z0-9_-]{43}$/;
-
-/** Accepts a full share link (…/verify/<token>) or just the token. */
-function extractToken(input: string) {
-  const trimmed = input.trim();
-  if (TOKEN.test(trimmed)) return trimmed;
-  const match = /\/verify\/([A-Za-z0-9_-]{43})(?:[/?#]|$)/.exec(trimmed);
-  return match?.[1] ?? null;
-}
-
-const STATUS_STYLE: Record<string, { label: string; color: string; background: string }> = {
-  VERIFIED: { label: 'Verified', color: '#141414', background: '#dcfce7' },
-  EXPIRED: { label: 'Expired', color: '#7a4a00', background: '#fff1d6' },
-  PENDING: { label: 'Not active yet', color: '#7a4a00', background: '#fff1d6' },
-  REVOKED: { label: 'Revoked', color: '#8a1c12', background: '#fdecea' },
-  INVALID: { label: 'Verification failed', color: '#8a1c12', background: '#fdecea' },
-  LINK_EXPIRED: { label: 'Link expired', color: '#7a4a00', background: '#fff1d6' },
-  LINK_REVOKED: { label: 'Link turned off', color: '#7a4a00', background: '#fff1d6' },
-  NOT_FOUND: { label: 'Not found', color: '#8a1c12', background: '#fdecea' },
-};
-
-const formatDate = (value: string | null) => (value ? new Date(value).toLocaleDateString() : 'No expiry');
+// Anyone can check a credential without an account: paste the link (or code) the learner shared
+// and see the same public result as the link's own verification page. Employers who sign up also
+// get a dashboard that keeps a list of the people they checked.
 
 export default function VerifyCredentialScreen() {
   const params = useLocalSearchParams<{ link?: string }>();
@@ -79,7 +42,7 @@ export default function VerifyCredentialScreen() {
     }
   };
 
-  const look = result ? STATUS_STYLE[result.status] ?? STATUS_STYLE.NOT_FOUND : null;
+  const look = result ? statusStyle(result.status) : null;
 
   return (
     <AuthShell

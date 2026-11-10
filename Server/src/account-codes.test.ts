@@ -28,7 +28,7 @@ test('accounts: privacy consent, instant sign-up, password reset and issuer appr
     await t.test('sign-up requires accepting the privacy notice and a supported role', async () => {
       const base = { name: 'Fictional Learner', email: learnerEmail, password: 'OldPassword1' };
       assert.equal((await post('/auth/register', { ...base, role: 'LEARNER' })).status, 400);
-      assert.equal((await post('/auth/register', { ...base, role: 'EMPLOYER', acceptedPrivacy: true })).status, 400);
+      assert.equal((await post('/auth/register', { ...base, role: 'ADMIN', acceptedPrivacy: true })).status, 400, 'admins cannot sign up in the app');
       const ok = await post('/auth/register', { ...base, role: 'LEARNER', acceptedPrivacy: true });
       assert.equal(ok.status, 201);
       const body = (await ok.json()) as { token?: string; user?: { role: string } };

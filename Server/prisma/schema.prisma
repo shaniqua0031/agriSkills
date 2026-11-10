@@ -47,6 +47,8 @@ model User {
   // Evidence learners have asked this issuer to review.
   evidenceToReview   RplEvidence[] @relation("EvidenceReviewer")
   oneTimeCodes       OneTimeCode[]
+  // Credential links this employer has checked.
+  employerChecks     EmployerCheck[]
 }
 
 enum CodePurpose {
@@ -113,8 +115,33 @@ model ShareLink {
   credential         Credential          @relation(fields: [credentialId], references: [id], onDelete: Cascade)
   createdBy          User                @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
   verificationEvents VerificationEvent[]
+  employerChecks     EmployerCheck[]
 
   @@index([credentialId])
+}
+
+// A credential link an employer checked while logged in, kept in their private list.
+// The raw share token is never stored; "Check again" re-verifies through the share link id.
+model EmployerCheck {
+  id              String   @id @default(cuid())
+  employerId      String
+  shareLinkId     String?
+  // Latest verification result, e.g. VERIFIED, REVOKED, LINK_REVOKED.
+  result          String
+  // What the employer saw when the result showed the credential.
+  learnerName     String?
+  credentialTitle String?
+  issuerName      String?
+  // The employer's own note, e.g. "Interviewed 12 Nov".
+  note            String?
+  createdAt       DateTime @default(now())
+  checkedAt       DateTime @default(now())
+
+  employer  User       @relation(fields: [employerId], references: [id], onDelete: Cascade)
+  shareLink ShareLink? @relation(fields: [shareLinkId], references: [id], onDelete: SetNull)
+
+  @@unique([employerId, shareLinkId])
+  @@index([employerId, checkedAt])
 }
 
 model VerificationEvent {

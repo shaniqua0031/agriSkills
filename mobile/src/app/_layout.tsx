@@ -14,7 +14,7 @@ function AppNavigator() {
       </View>
     );
   }
-  // Each signed-in area (/learner, /issuer, /admin) only exists while a user with that role is logged in,
+  // Each signed-in area (/learner, /issuer, /admin, /employer) only exists while a user with that role is logged in,
   // so opening one while logged out (or after logging out) falls back to the login page at "/".
   return (
     <Stack screenOptions={{ headerShown: false }}>
@@ -26,6 +26,9 @@ function AppNavigator() {
       </Stack.Protected>
       <Stack.Protected guard={user?.role === 'ADMIN'}>
         <Stack.Screen name="admin" />
+      </Stack.Protected>
+      <Stack.Protected guard={user?.role === 'EMPLOYER'}>
+        <Stack.Screen name="employer" />
       </Stack.Protected>
     </Stack>
   );
