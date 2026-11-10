@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AgriSkills Passport</title>
+<style>
+  @page { size: 1280px 720px; margin: 0; }
+  :root {
+    --green: #1f7a48; --green-dark: #123d27; --green-soft: #e8f4ec; --ink: #17241c;
+    --muted: #5b6b61; --line: #d5e3d9; --red: #b3261e; --red-soft: #fbeceb; --amber: #8a5a00; --amber-soft: #fdf3dd;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #fff; }
+  body { font-family: "Segoe UI", system-ui, sans-serif; color: var(--ink); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .slide { width: 1280px; height: 720px; padding: 56px 68px; position: relative; overflow: hidden; page-break-after: always; break-after: page; background: #fff; }
+  .slide:last-child { page-break-after: auto; break-after: auto; }
+  .num { position: absolute; bottom: 26px; right: 40px; font-size: 13px; color: var(--muted); }
+  .brandmark { position: absolute; bottom: 24px; left: 68px; font-size: 13px; color: var(--muted); font-weight: 600; }
+  .brandmark b { color: var(--green); }
+  .kicker { font-size: 14px; letter-spacing: .12em; text-transform: uppercase; color: var(--green); font-weight: 700; margin-bottom: 10px; }
+  h1 { font-size: 64px; line-height: 1.05; font-weight: 800; color: var(--green-dark); }
+  h2 { font-size: 38px; line-height: 1.15; font-weight: 800; color: var(--green-dark); margin-bottom: 8px; }
+  .lead { font-size: 19px; color: var(--muted); line-height: 1.45; max-width: 820px; }
+  .split { display: grid; grid-template-columns: 300px 1fr; gap: 48px; height: 100%; align-items: start; }
+  .phone { width: 300px; height: 600px; border-radius: 30px; border: 8px solid #1b1b1b; overflow: hidden; background: #111; box-shadow: 0 14px 34px rgba(0,0,0,.18); }
+  .phone img { width: 100%; display: block; }
+  table.btns { width: 100%; border-collapse: collapse; margin-top: 18px; font-size: 15px; }
+  table.btns th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); padding: 0 12px 8px 0; border-bottom: 2px solid var(--line); }
+  table.btns td { padding: 9px 12px 9px 0; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.35; }
+  table.btns td:first-child { width: 230px; }
+  .b { display: inline-block; padding: 4px 11px; border-radius: 8px; font-weight: 700; font-size: 13.5px; white-space: nowrap; }
+  .b.p { background: var(--green); color: #fff; }
+  .b.s { background: #fff; color: var(--green); border: 1.5px solid var(--green); }
+  .b.l { color: var(--green); padding-left: 0; padding-right: 0; text-decoration: underline; text-underline-offset: 3px; }
+  .b.d { background: var(--red-soft); color: var(--red); border: 1.5px solid #efc3c0; }
+  .b.t { background: var(--green-soft); color: var(--green-dark); border: 1.5px solid var(--line); }
+  .b.f { background: #f3f5f4; color: var(--ink); border: 1.5px dashed #b9c7be; font-weight: 600; }
+  .note { margin-top: 14px; font-size: 14px; background: var(--amber-soft); color: var(--amber); padding: 10px 14px; border-radius: 10px; line-height: 1.4; }
+  .note b { color: #6b4500; }
+  .why { color: var(--muted); font-size: 13.5px; }
+  .cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: 36px; margin-top: 14px; }
+  .cols2 h3, .card h3 { font-size: 18px; color: var(--green-dark); margin-bottom: 2px; }
+  .cols2 table.btns { margin-top: 8px; font-size: 14px; }
+  .cols2 table.btns td:first-child { width: 190px; }
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 26px; }
+  .card { border: 1.5px solid var(--line); border-radius: 16px; padding: 20px 22px; background: #fbfdfb; }
+  .card p { font-size: 15px; color: var(--muted); line-height: 1.45; margin-top: 6px; }
+  .card .ic { width: 40px; height: 40px; border-radius: 12px; background: var(--green-soft); color: var(--green); display: grid; place-items: center; font-weight: 800; font-size: 18px; margin-bottom: 12px; }
+  .tabbar { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  /* title slide */
+  .title { background: var(--green-dark); color: #fff; display: grid; grid-template-columns: 1fr 330px; gap: 50px; align-items: center; }
+  .title h1 { color: #fff; font-size: 74px; }
+  .title h1 span { color: #8fd6a8; }
+  .title .lead { color: #c9e3d3; font-size: 22px; margin-top: 20px; }
+  .title .kicker { color: #8fd6a8; }
+  .title .phone { border-color: #000; height: 620px; }
+  .title .num, .title .brandmark { color: #8fb39d; }
+  .pill { display: inline-block; margin-top: 30px; margin-right: 8px; padding: 8px 14px; border: 1px solid #3f7357; border-radius: 999px; font-size: 14px; color: #c9e3d3; }
+  .flow { display: flex; align-items: stretch; gap: 14px; margin-top: 34px; }
+  .flow .step { flex: 1; border-radius: 16px; padding: 20px; background: var(--green-soft); }
+  .flow .step b { display: block; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--green); margin-bottom: 6px; }
+  .flow .step h3 { font-size: 20px; color: var(--green-dark); }
+  .flow .step p { font-size: 14.5px; color: var(--muted); margin-top: 6px; line-height: 1.45; }
+  .flow .arrow { align-self: center; font-size: 26px; color: var(--green); }
+  .uniq { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 28px; margin-top: 22px; }
+  .uniq div { display: grid; grid-template-columns: 38px 1fr; gap: 12px; align-items: start; }
+  .uniq .n { width: 38px; height: 38px; border-radius: 50%; background: var(--green); color: #fff; font-weight: 800; display: grid; place-items: center; }
+  .uniq h3 { font-size: 17.5px; color: var(--green-dark); }
+  .uniq p { font-size: 14px; color: var(--muted); line-height: 1.4; margin-top: 3px; }
+  .compare { width: 100%; border-collapse: collapse; margin-top: 22px; font-size: 15.5px; }
+  .compare th, .compare td { padding: 11px 14px; border-bottom: 1px solid var(--line); text-align: left; }
+  .compare th { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  .compare td:nth-child(3) { background: var(--green-soft); color: var(--green-dark); font-weight: 600; }
+  .compare th:nth-child(3) { background: var(--green); color: #fff; border-radius: 8px 8px 0 0; }
+  .end { background: var(--green-dark); color: #fff; display: flex; flex-direction: column; justify-content: center; }
+  .end h1 { color: #fff; }
+  .end .lead { color: #c9e3d3; margin-top: 18px; }
+  .end .num, .end .brandmark { color: #8fb39d; }
+</style>
+</head>
+<body>
+
+<!-- 1 Title -->
+<section class="slide title">
+  <div>
+    <div class="kicker">Product walkthrough</div>
+    <h1>AgriSkills <span>Passport</span></h1>
+    <p class="lead">A learner-controlled digital record of agricultural skills and qualifications. Credentials are issued by vetted trainers, kept by the learner and verified by employers in seconds.</p>
+    <span class="pill">Learners</span><span class="pill">Issuers</span><span class="pill">Admins</span><span class="pill">Employers</span>
+  </div>
+  <div class="phone"><img src="shots/login.png" alt="Login screen"></div>
+  <div class="num">1</div>
+</section>
+
+<!-- 2 Problem -->
+<section class="slide">
+  <div class="kicker">Why it exists</div>
+  <h2>Farm skills are real, but hard to prove</h2>
+  <p class="lead">Farm workers learn on the job and on short courses. Paper certificates get lost, damaged or forged, and skills learned in the field often have no record at all. Employers have no quick way to check what is true.</p>
+  <div class="cards">
+    <div class="card"><div class="ic">1</div><h3>Lost paper</h3><p>Certificates are kept in folders, cars and sheds. One flood or move and the proof is gone.</p></div>
+    <div class="card"><div class="ic">2</div><h3>Easy to fake</h3><p>A scanned or printed certificate can be edited. Employers must phone the trainer to check it.</p></div>
+    <div class="card"><div class="ic">3</div><h3>Unrecorded skills</h3><p>Years of irrigation, spraying or livestock work leave no formal trace, so experience goes unrecognised.</p></div>
+  </div>
+  <div class="flow">
+    <div class="step"><b>Issuer</b><h3>Issues a signed credential</h3><p>An approved training provider issues it to the learner's email.</p></div>
+    <div class="arrow">→</div>
+    <div class="step"><b>Learner</b><h3>Keeps it and shares it</h3><p>Stored in their passport, shared with a QR code or link they control.</p></div>
+    <div class="arrow">→</div>
+    <div class="step"><b>Employer</b><h3>Verifies it in seconds</h3><p>Opens the link, sees whether it is genuine, current and unrevoked.</p></div>
+  </div>
+  <div class="brandmark">AgriSkills <b>Passport</b></div><div class="num">2</div>
+</section>
+
+<!-- 3 Legend -->
+<section class="slide">
+  <div class="kicker">How to read this deck</div>
+  <h2>Every screen, every button</h2>
+  <p class="lead">The next slides go screen by screen. Each button is shown with what it does and why it is there. The button styles below match the app.</p>
+  <table class="btns" style="max-width:900px;margin-top:30px">
+    <tr><th>Style</th><th>Meaning</th></tr>
+    <tr><td><span class="b p">Primary action</span></td><td>The main thing to do on that screen (log in, save, issue).</td></tr>
+    <tr><td><span class="b s">Secondary action</span></td><td>A helpful extra option (copy link, choose a photo).</td></tr>
+    <tr><td><span class="b l">Text link</span></td><td>Moves to another screen (forgot password, create an account).</td></tr>
+    <tr><td><span class="b t">Choice / tab</span></td><td>Picks one option from a set (role, expiry, tab).</td></tr>
+    <tr><td><span class="b d">Careful action</span></td><td>Deletes, revokes or turns something off. Most need a second tap to confirm.</td></tr>
+    <tr><td><span class="b f">Field / switch</span></td><td>Something you type into, tick or switch on.</td></tr>
+  </table>
+  <div class="brandmark">AgriSkills <b>Passport</b></div><div class="num">3</div>
+</section>
+
+<!-- 4 Login -->
+<section class="slide">
+  <div class="split">
+    <div class="phone"><img src="shots/login.png" alt="Login screen"></div>
+    <div>
+      <div class="kicker">Everyone · Screen 1</div>
+      <h2>Log in</h2>
+      <p class="lead">The front door for learners, issuers and admins. The app sends each person to their own area based on their role.</p>
+      <table class="btns">
+        <tr><th>Button</th><th>What it does &amp; why</th></tr>
+        <tr><td><span class="b f">Email · Password</span></td><td>Sign-in fields. <span class="why">Pressing Enter in the email field jumps to the password field, which is faster on a phone.</span></td></tr>
+        <tr><td><span class="b s">Show</span></td><td>Shows or hides the password. <span class="why">Fewer typing mistakes on small keyboards.</span></td></tr>
+        <tr><td><span class="b f">☑ Remember me</span></td><td>Stays logged in for 7 days, using the phone's secure storage. <span class="why">Untick on shared computers.</span></td></tr>
+        <tr><td><span class="b l">Forgot password?</span></td><td>Opens the email reset flow.</td></tr>
+        <tr><td><span class="b p">Log in</span></td><td>Signs in. <span class="why">Blocked for 15 minutes after 10 failed tries, which stops password guessing.</span></td></tr>
+        <tr><td><span class="b l">Create an account</span></td><td>Opens sign-up.</td></tr>
+        <tr><td><span class="b t">Verify a credential →</span></td><td>For employers. Checks a shared link <b>without any account</b>.</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="num">4</div>
+</section>
+
+<!-- 5 Register -->
+<section class="slide">
+  <div class="split">
+    <div class="phone"><img src="shots/register.png" alt="Create account screen"></div>
+    <div>
+      <div class="kicker">Everyone · Screen 2</div>
+      <h2>Create your account</h2>
+      <p class="lead">One sign-up form for both learners and training providers.</p>
+      <table class="btns">
+        <tr><th>Button</th><th>What it does &amp; why</th></tr>
+        <tr><td><span class="b t">Learner</span> <span class="b t">Issuer</span></td><td>Chooses your role. <span class="why">The name field changes to "Organisation or trainer name" when Issuer is chosen.</span></td></tr>
+        <tr><td><span class="b f">Full name · Email</span></td><td>Who you are. Issuers send credentials to this email address.</td></tr>
+        <tr><td><span class="b f">Password · Confirm</span> <span class="b s">Show</span></td><td>At least 8 characters, with a live strength meter. <span class="why">Confirming catches typing mistakes.</span></td></tr>
+        <tr><td><span class="b f">☑ Privacy notice</span></td><td>Must be ticked to continue. The link opens the full notice. <span class="why">Consent comes first.</span></td></tr>
+        <tr><td><span class="b p">Create account</span></td><td>Creates the account and logs you straight in.</td></tr>
+        <tr><td><span class="b l">Log in</span></td><td>Back to log in if you already have an account.</td></tr>
+      </table>
+      <div class="note"><b>Safety:</b> a new Issuer can log in straight away but <b>cannot issue anything until an admin approves it</b>. Admin accounts can't be created in the app.</div>
+    </div>
+  </div>
+  <div class="num">5</div>
+</section>
+
+<!-- 6 Forgot -->
+<section class="slide">
+  <div class="split">
+    <div class="phone"><img src="shots/forgot.png" alt="Forgot password screen"></div>
+    <div>
+      <div class="kicker">Everyone · Screen 3</div>
+      <h2>Forgot password</h2>
+      <p class="lead">A three-step reset: ask for a link, set a new password, done.</p>
+      <table class="btns">
+        <tr><th>Button</th><th>What it does &amp; why</th></tr>
+        <tr><td><span class="b f">Email address</span></td><td>The account to reset.</td></tr>
+        <tr><td><span class="b p">Send reset link</span></td><td>Emails a one-time link that <b>expires after 15 minutes</b>. <span class="why">The reply looks the same whether or not the email has an account, so nobody can use it to find out who is registered.</span></td></tr>
+        <tr><td><span class="b f">New · Confirm password</span></td><td>Shown when you open the link from the email.</td></tr>
+        <tr><td><span class="b p">Change password</span></td><td>Saves the new password. The link then stops working.</td></tr>
+        <tr><td><span class="b s">Back to log in</span> <span class="b l">Back to log in</span></td><td>Returns to log in after sending the link, after finishing, or if you remember your password.</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="num">6</div>
+</section>
+
+<!-- 7 Verify -->
+<section class="slide">
+  <div class="split">
+    <div class="phone"><img src="shots/verify.png" alt="Verify credential screen"></div>
+    <div>
+      <div class="kicker">Employers · No account</div>
+      <h2>Verify a credential</h2>
+      <p class="lead">An employer pastes the link a learner shared, or simply scans the QR code with a phone camera.</p>
+      <table class="btns">
+        <tr><th>Button</th><th>What it does &amp; why</th></tr>
+        <tr><td><span class="b f">Verification link</span></td><td>Paste the <code>…/verify/…</code> link here.</td></tr>
+        <tr><td><span class="b p">Check credential</span></td><td>Checks the link, then the <b>digital signature</b>, then whether the credential is revoked or expired.</td></tr>
+        <tr><td><span class="b l">Log in</span></td><td>For visitors who do have an account.</td></tr>
+      </table>
+      <div class="cols2" style="margin-top:20px">
+        <div><h3>What a valid result shows</h3><p class="why" style="font-size:14.5px;line-height:1.5">Holder, issuer, issue date, expiry date, skills and public reference.</p></div>
+        <div><h3>What it never shows</h3><p class="why" style="font-size:14.5px;line-height:1.5">A link that was turned off or has expired reveals <b>no details at all</b>. It just says the link no longer works.</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="num">7</div>
+</section>
+
+<!-- 8 Privacy -->
+<section class="slide">
+  <div class="split">
+    <div class="phone"><img src="shots/privacy.png" alt="Privacy notice screen"></div>
+    <div>
+      <div class="kicker">Everyone · Screen 5</div>
+      <h2>Privacy notice</h2>
+      <p class="lead">A plain-language page explaining what is collected, why, and who can see it. It opens from the sign-up checkbox.</p>
+      <table class="btns">
+        <tr><th>Button</th><th>What it does &amp; why</th></tr>
+        <tr><td><span class="b l">‹ Back</span></td><td>Returns to the screen you came from, so anything you already typed in sign-up is kept.</td></tr>
+      </table>
+      <div class="cards" style="grid-template-columns:1fr 1fr;margin-top:24px">
+        <div class="card"><h3>Learner in control</h3><p>Nothing is public by default. Only the learner can create a share link, and only they can turn it off.</p></div>
+        <div class="card"><h3>Opt-in data</h3><p>Location and photos are only collected when the learner chooses to add them.</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="num">8</div>
+</section>
+
+<!-- 9 Learner home + credentials -->
+<section class="slide">
+  <div class="kicker">Learner area</div>
+  <h2>Passport &amp; credentials</h2>
+  <p class="lead">After logging in, learners get five tabs at the bottom of the screen:</p>
+  <div class="tabbar"><span class="b t">Passport</span><span class="b t">Credentials</span><span class="b t">Evidence</span><span class="b t">Share</span><span class="b t">Profile</span></div>
+  <div class="cols2">
+    <div>
+      <h3>Passport (home)</h3>
+      <table class="btns">
+        <tr><td><span class="b s">Logout</span></td><td>Signs out and clears the saved login.</td></tr>
+        <tr><td><span class="b f">Credentials · Verified</span></td><td>Summary counts at a glance.</td></tr>
+        <tr><td><span class="b t">Achievement card</span></td><td>Each recent credential. Tap to open its details.</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>Credentials list → details</h3>
+      <table class="btns">
+        <tr><td><span class="b t">Credential card</span></td><td>Shows the title, issuer, status and public reference. Tap to open.</td></tr>
+        <tr><td><span class="b f">Details page</span></td><td>Shows the issuer, category, issue and expiry dates, reference, description and skills. <span class="why">Read only, so learners can't edit what an issuer signed.</span></td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="note" style="margin-top:22px"><b>Why read-only matters:</b> every credential is signed by the server when it is issued. If anyone changes the data later, verification fails.</div>
+  <div class="brandmark">AgriSkills <b>Passport</b></div><div class="num">9</div>
+</section>
+
+<!-- 10 Evidence -->
+<section class="slide">
+  <div class="kicker">Learner area · Evidence tab</div>
+  <h2>Skills evidence: proof of what you can already do</h2>
+  <p class="lead">For skills learned on the job (Recognition of Prior Learning, or RPL). Learners record what they did, with optional photo, location and supervisor.</p>
+  <div class="cols2">
+    <div>
+      <h3>Evidence list &amp; add form</h3>
+      <table class="btns">
+        <tr><td><span class="b p">+ Add evidence</span></td><td>Opens the form.</td></tr>
+        <tr><td><span class="b t">Evidence card</span></td><td>Shows the skill and its review status. Tap to open it.</td></tr>
+        <tr><td><span class="b f">Skill · What did you do?</span></td><td>Both are required.</td></tr>
+        <tr><td><span class="b s">Take photo</span> <span class="b s">From gallery</span></td><td>Adds a photo of the work (called "Choose photo" on web). <span class="b l">Remove photo</span> undoes it.</td></tr>
+        <tr><td><span class="b f">Location stamp switch</span></td><td>Records where the work was done. <span class="why">Location is only asked for when switched on.</span></td></tr>
+        <tr><td><span class="b f">Supervisor name · contact</span></td><td>A witness who can confirm the work.</td></tr>
+        <tr><td><span class="b p">Save evidence</span></td><td>Saves the evidence and uploads the photo privately.</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>Evidence details</h3>
+      <table class="btns">
+        <tr><td><span class="b l">‹ All evidence</span></td><td>Back to the list.</td></tr>
+        <tr><td><span class="b d">Delete evidence</span></td><td>First tap changes it to <b>"Tap again to delete permanently"</b>. The second tap deletes the evidence <b>and its photo</b>.</td></tr>
+        <tr><td><span class="b l">Cancel</span></td><td>Backs out of the delete.</td></tr>
+      </table>
+      <div class="note"><b>Honest by design:</b> learners can't confirm their own evidence. It starts as "submitted", and naming a supervisor only marks it "confirmation pending". Photo links expire after 10 minutes and only the owner can see them.</div>
+    </div>
+  </div>
+  <div class="num">10</div>
+</section>
+
+<!-- 11 Share -->
+<section class="slide">
+  <div class="kicker">Learner area · Share tab</div>
+  <h2>Share a credential with a QR code</h2>
+  <p class="lead">The learner decides who sees which credential, and for how long.</p>
+  <div class="cols2">
+    <div>
+      <table class="btns">
+        <tr><th>Button</th><th>What it does &amp; why</th></tr>
+        <tr><td><span class="b t">Qualification card</span></td><td>Chooses which credential to share. <span class="why">Only active credentials can be shared. Expired or revoked ones stay in the passport as a record.</span></td></tr>
+        <tr><td><span class="b t">7</span> <span class="b t">30</span> <span class="b t">90 days</span></td><td>How long the link works.</td></tr>
+        <tr><td><span class="b p">Create verification link</span></td><td>Creates a QR code and a private link.</td></tr>
+        <tr><td><span class="b p">Share link</span></td><td>Opens the phone's share menu (WhatsApp, email, SMS).</td></tr>
+        <tr><td><span class="b s">Copy link</span></td><td>Copies the link. The button changes to "Link copied".</td></tr>
+        <tr><td><span class="b d">Turn off</span></td><td>Stops one active link straight away.</td></tr>
+      </table>
+    </div>
+    <div>
+      <div class="card" style="margin-top:6px"><h3>What the employer will see</h3><p>Shown <b>before</b> sharing, so the learner knows exactly what is revealed.</p></div>
+      <div class="card" style="margin-top:14px"><h3>The link is shown only once</h3><p>The server keeps only a scrambled copy (a SHA-256 hash) of the link's code, so even a database leak can't be used to rebuild working links.</p></div>
+      <div class="card" style="margin-top:14px"><h3>Dead links reveal nothing</h3><p>A link that was turned off or has expired shows no credential details. It just says the link no longer works.</p></div>
+    </div>
+  </div>
+  <div class="num">11</div>
+</section>
+
+<!-- 12 Issuer -->
+<section class="slide">
+  <div class="kicker">Issuer area · Training providers</div>
+  <h2>Issue and manage credentials</h2>
+  <p class="lead">Issuers get four tabs:</p>
+  <div class="tabbar"><span class="b t">Dashboard</span><span class="b t">Issued</span><span class="b t">Issue</span><span class="b t">Profile</span></div>
+  <div class="cols2">
+    <div>
+      <h3>Issue tab</h3>
+      <table class="btns">
+        <tr><td><span class="b f">Learner email</span></td><td>The learner's registered email address.</td></tr>
+        <tr><td><span class="b f">Title · Category · Description</span></td><td>What the qualification is.</td></tr>
+        <tr><td><span class="b f">Issue date · Expiry</span></td><td>Dates in YYYY-MM-DD format. Expiry is optional.</td></tr>
+        <tr><td><span class="b f">Skills · Evidence note</span></td><td>Skills separated by commas, plus an optional note.</td></tr>
+        <tr><td><span class="b p">Issue credential</span></td><td>Signs the credential and adds it to the learner's passport. <span class="why">Greyed out until an admin approves the issuer.</span></td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>Dashboard · Issued · Profile</h3>
+      <table class="btns">
+        <tr><td><span class="b s">Logout</span></td><td>Signs out (on the Dashboard).</td></tr>
+        <tr><td><span class="b f">Issued · Active</span></td><td>Summary counts and the latest credentials.</td></tr>
+        <tr><td><span class="b d">Revoke credential</span></td><td>Cancels a credential, for example if it was issued by mistake. Employers will then see it as <b>revoked</b>.</td></tr>
+        <tr><td><span class="b p">Log out</span></td><td>On the Profile tab.</td></tr>
+      </table>
+      <div class="note"><b>Approval banner:</b> until an admin approves them, issuers see a notice explaining why the Issue button is greyed out.</div>
+    </div>
+  </div>
+  <div class="num">12</div>
+</section>
+
+<!-- 13 Admin -->
+<section class="slide">
+  <div class="kicker">Admin area</div>
+  <h2>Issuer approvals: keeping fake trainers out</h2>
+  <p class="lead">Admins check that an issuer is a genuine training provider (for example, accredited by AgriSETA or the QCTO) before it can issue anything.</p>
+  <table class="btns" style="max-width:1000px">
+    <tr><th>Button</th><th>What it does &amp; why</th></tr>
+    <tr><td><span class="b t">Pending (n)</span> <span class="b t">Approved (n)</span></td><td>Two tabs, each with a live count.</td></tr>
+    <tr><td><span class="b p">Approve</span></td><td>Lets the issuer start issuing. The app records <b>which admin</b> approved it.</td></tr>
+    <tr><td><span class="b d">Decline</span></td><td>First tap changes it to "Tap again to decline". Declining removes an account that hasn't issued anything.</td></tr>
+    <tr><td><span class="b d">Withdraw approval</span></td><td>On the Approved tab, also needs two taps. Stops future issuing. <span class="why">Credentials already issued stay valid, so learners aren't punished.</span></td></tr>
+    <tr><td><span class="b l">Cancel</span></td><td>Backs out of a decline or withdraw.</td></tr>
+    <tr><td><span class="b f">Pull to refresh</span></td><td>Reloads the lists.</td></tr>
+    <tr><td><span class="b s">Logout</span></td><td>Signs out.</td></tr>
+  </table>
+  <div class="brandmark">AgriSkills <b>Passport</b></div><div class="num">13</div>
+</section>
+
+<!-- 14 Unique -->
+<section class="slide">
+  <div class="kicker">What makes it different</div>
+  <h2>Why AgriSkills Passport is unique</h2>
+  <div class="uniq">
+    <div><span class="n">1</span><span><h3>Built for agriculture</h3><p>Designed around farm work and training providers, with RPL evidence from the field and not just certificates.</p></span></div>
+    <div><span class="n">2</span><span><h3>Learner owns the record</h3><p>Credentials follow the person, not the employer. Only the learner shares them, and only the learner can stop sharing.</p></span></div>
+    <div><span class="n">3</span><span><h3>Tamper-evident</h3><p>Every credential is signed (HMAC-SHA256). Change one field and verification fails.</p></span></div>
+    <div><span class="n">4</span><span><h3>Verify in seconds, no account</h3><p>Employers scan a QR code. No sign-up, no phone calls to the trainer.</p></span></div>
+    <div><span class="n">5</span><span><h3>Field evidence with proof</h3><p>Photo, optional location stamp and supervisor details. Learners can't confirm their own evidence.</p></span></div>
+    <div><span class="n">6</span><span><h3>Vetted issuers only</h3><p>Admins approve every training provider before it can issue anything, which keeps out "certificate mills".</p></span></div>
+    <div><span class="n">7</span><span><h3>Links that expire and can be turned off</h3><p>Choose 7, 30 or 90 days. Links are stored scrambled (hashed), and dead links show nothing.</p></span></div>
+    <div><span class="n">8</span><span><h3>Privacy by default</h3><p>Location is opt-in, photos are private with links that expire after 10 minutes, and two taps are needed for anything permanent.</p></span></div>
+  </div>
+  <div class="num">14</div>
+</section>
+
+<!-- 15 Comparison -->
+<section class="slide">
+  <div class="kicker">Side by side</div>
+  <h2>Paper certificate vs. AgriSkills Passport</h2>
+  <table class="compare">
+    <tr><th></th><th>Paper / scanned certificate</th><th>AgriSkills Passport</th></tr>
+    <tr><td><b>Can it be lost?</b></td><td>Yes, through fire, flood or a house move</td><td>No. It's stored securely and opens on any phone</td></tr>
+    <tr><td><b>Can it be faked?</b></td><td>Easily edited</td><td>A digital signature exposes any change</td></tr>
+    <tr><td><b>Checking it</b></td><td>Phone or email the trainer and wait days</td><td>Scan a QR code and get an answer in seconds</td></tr>
+    <tr><td><b>Revoked qualifications</b></td><td>The paper still looks valid</td><td>Shows as revoked straight away</td></tr>
+    <tr><td><b>Who controls sharing?</b></td><td>Whoever has a copy</td><td>The learner, with expiry and an off switch</td></tr>
+    <tr><td><b>Skills learned on the job</b></td><td>No record</td><td>Evidence with photo, location and supervisor</td></tr>
+    <tr><td><b>Trust in the issuer</b></td><td>Unknown</td><td>Issuers must be approved by an admin</td></tr>
+  </table>
+  <div class="brandmark">AgriSkills <b>Passport</b></div><div class="num">15</div>
+</section>
+
+<!-- 16 End -->
+<section class="slide end">
+  <div class="kicker" style="color:#8fd6a8">Summary</div>
+  <h1>Skills you can carry,<br>proof you can trust.</h1>
+  <p class="lead">Issuers sign it, learners own it, employers verify it in seconds. Runs on Android, iPhone and the web.</p>
+  <div class="brandmark">AgriSkills <b style="color:#8fd6a8">Passport</b></div><div class="num">16</div>
+</section>
+
+</body>
+</html>

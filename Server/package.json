@@ -1,0 +1,39 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "AgriSkills Passport API",
+  "main": "src/server.ts",
+  "scripts": {
+    "dev": "tsx watch --include .env src/server.ts",
+    "start": "tsx src/server.ts",
+    "test": "tsx --test src/**/*.test.ts",
+    "prisma:generate": "prisma generate",
+    "prisma:push": "prisma db push",
+    "credentials:sign": "tsx prisma/sign-credentials.ts",
+    "issuer:approve": "tsx prisma/approve-issuer.ts",
+    "admin:grant": "tsx prisma/grant-admin.ts"
+  },
+  "keywords": [],
+  "type": "module",
+  "dependencies": {
+    "@prisma/client": "^6.15.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.6",
+    "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.11.0",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.2",
+    "jsonwebtoken": "^9.0.3",
+    "nodemailer": "^7.0.13",
+    "prisma": "^6.15.0",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/nodemailer": "^8.0.2"
+  }
+}

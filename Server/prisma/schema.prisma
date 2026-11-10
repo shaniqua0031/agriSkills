@@ -1,0 +1,180 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  LEARNER
+  EMPLOYER
+  ISSUER
+  // Approves issuer accounts. Cannot sign up in the app: granted with `npm run admin:grant`.
+  ADMIN
+}
+
+enum CredentialStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  REVOKED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Set when the user enters the code emailed at sign-up; login requires it.
+  emailVerifiedAt    DateTime?
+  // When the user agreed to the privacy notice at sign-up.
+  privacyAcceptedAt  DateTime?
+  // Issuers can only issue or revoke credentials once approved (npm run issuer:approve).
+  issuerApprovedAt   DateTime?
+  // The admin who approved this issuer (kept for accountability).
+  issuerApprovedById String?
+
+  issuedCredentials  Credential[]  @relation("IssuedCredentials")
+  learnerCredentials Credential[]  @relation("LearnerCredentials")
+  shareLinks         ShareLink[]
+  rplEvidence        RplEvidence[] @relation("LearnerEvidence")
+  // Evidence learners have asked this issuer to review.
+  evidenceToReview   RplEvidence[] @relation("EvidenceReviewer")
+  oneTimeCodes       OneTimeCode[]
+}
+
+enum CodePurpose {
+  PASSWORD_RESET
+  EMAIL_VERIFICATION
+}
+
+// One-time password reset tokens. Only the SHA-256 token hash is stored.
+// The existing mapped table name is retained to avoid a destructive rename.
+model OneTimeCode {
+  id        String      @id @default(cuid())
+  userId    String
+  purpose   CodePurpose @default(PASSWORD_RESET)
+  codeHash  String
+  attempts  Int         @default(0)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime    @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose])
+  @@map("PasswordReset")
+}
+
+model Credential {
+  id                 String           @id @default(cuid())
+  publicId           String           @unique
+  title              String
+  description        String
+  category           String
+  issueDate          DateTime
+  expiryDate         DateTime?
+  status             CredentialStatus @default(ACTIVE)
+  skills             String[]
+  evidence           String?
+  revokedAt          DateTime?
+  // HMAC-SHA256 over the canonical payload (see src/integrity.ts). Null = unsigned, fails verification.
+  signature          String?
+  signatureAlgorithm String?
+  signatureKeyId     String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  learnerId String
+  issuerId  String
+
+  learner            User                @relation("LearnerCredentials", fields: [learnerId], references: [id])
+  issuer             User                @relation("IssuedCredentials", fields: [issuerId], references: [id])
+  verificationEvents VerificationEvent[]
+  shareLinks         ShareLink[]
+}
+
+model ShareLink {
+  id              String    @id @default(cuid())
+  credentialId    String
+  // SHA-256 of the random bearer token; the raw token is only returned once, at creation.
+  tokenHash       String    @unique
+  createdByUserId String
+  expiresAt       DateTime?
+  revokedAt       DateTime?
+  createdAt       DateTime  @default(now())
+
+  credential         Credential          @relation(fields: [credentialId], references: [id], onDelete: Cascade)
+  createdBy          User                @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+  verificationEvents VerificationEvent[]
+
+  @@index([credentialId])
+}
+
+model VerificationEvent {
+  id           String     @id @default(cuid())
+  credentialId String
+  shareLinkId  String?
+  eventType    String
+  details      String?
+  createdAt    DateTime   @default(now())
+  credential   Credential @relation(fields: [credentialId], references: [id])
+  shareLink    ShareLink? @relation(fields: [shareLinkId], references: [id], onDelete: SetNull)
+}
+
+enum AttestationStatus {
+  NOT_REQUESTED
+  PENDING
+  CONFIRMED
+}
+
+enum EvidenceReviewStatus {
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+// Recognition of prior learning (RPL): evidence a learner records for a skill they already have.
+model RplEvidence {
+  id        String @id @default(cuid())
+  learnerId String
+  // The skill the evidence supports, e.g. "Drip irrigation installation".
+  skill     String
+  note      String
+
+  // Private storage reference ("cloudinary:<public_id>" or "local:<file>"); never a public URL.
+  photoKey String?
+
+  // Optional; only stored when the learner explicitly chose to add a location stamp.
+  locationConsent    Boolean   @default(false)
+  locationLatitude   Float?
+  locationLongitude  Float?
+  locationCapturedAt DateTime?
+
+  // Optional supervisor contact, only if the learner supplies them. The reviewing issuer may contact them;
+  // only the issuer approves evidence. attestationStatus is a legacy column and is no longer used.
+  supervisorName    String?
+  supervisorContact String?
+  attestationStatus AttestationStatus    @default(NOT_REQUESTED)
+  reviewStatus      EvidenceReviewStatus @default(SUBMITTED)
+
+  // The approved issuer the learner chose to review this evidence, and their decision.
+  reviewerId String?
+  reviewNote String?
+  reviewedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  learner  User  @relation("LearnerEvidence", fields: [learnerId], references: [id], onDelete: Cascade)
+  reviewer User? @relation("EvidenceReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+
+  @@index([learnerId])
+  @@index([reviewerId])
+}

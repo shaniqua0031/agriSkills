@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Secrets and local settings (database URL, JWT, Cloudinary and email keys)
+.env
+.env.*
+!.env.example
+
+# Local evidence photos (development storage)
+Server/uploads/
+
+# Expo / build output
+.expo/
+dist/
+web-build/
+
+# Tool and editor files
+.playwright-mcp/
+.claude/
+.vscode/
+*.log
+.DS_Store
