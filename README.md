@@ -76,7 +76,7 @@ To set up a new, empty database, run `cd Server && npm run prisma:push`. `prisma
 3. Render asks for the secret values:
    - `DATABASE_URL`: the Neon connection string from `Server/.env`.
    - `CREDENTIAL_SIGNING_SECRET`: **must be the same value as in `Server/.env`**, or existing credentials fail verification.
-   - Cloudinary and SMTP keys are optional. Without them, evidence photos and password-reset emails are switched off.
+   - Cloudinary keys are optional. Without them, evidence photos are switched off. Password-reset emails are not set up on Render, so **Forgot password?** is off there.
 4. Click **Apply** and wait for both services to go live.
 5. Check that the URLs are `https://agriskills-api.onrender.com` and `https://agriskills-app.onrender.com`. If Render added a suffix to either name, update the URLs in `render.yaml` and push again.
 

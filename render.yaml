@@ -64,12 +64,9 @@ services:
       - key: CLOUDINARY_API_SECRET
         sync: false
 
-      # Password-reset emails (optional). Use Gmail (SMTP_USER + App Password) or Resend.
-      # Leave blank to switch password reset off.
-      - key: SMTP_USER
-        sync: false
-      - key: SMTP_PASS
-        sync: false
+      # Password-reset emails are not set up, so "Forgot password?" is switched off on Render.
+      # To turn it on later, add SMTP_USER and SMTP_PASS (Gmail App Password) under
+      # agriskills-api -> Environment in the Render Dashboard.
 
   # ---------- Web app ----------
   - type: web
