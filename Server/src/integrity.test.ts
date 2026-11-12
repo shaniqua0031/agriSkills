@@ -8,6 +8,7 @@ import {
   createShareToken,
   hashShareToken,
   signCredential,
+  signingKeyFingerprint,
   verifyCredentialSignature,
 } from './integrity.js';
 
@@ -57,4 +58,12 @@ test('share tokens are random, URL-safe and stored only as a hash', () => {
   assert.notEqual(first, second);
   assert.match(hashShareToken(first), /^[0-9a-f]{64}$/);
   assert.notEqual(hashShareToken(first), first);
+});
+
+test('signing key fingerprint identifies the secret without revealing it', () => {
+  const a = signingKeyFingerprint('secret-one');
+  assert.match(a, /^[0-9a-f]{12}$/);
+  assert.equal(a, signingKeyFingerprint('secret-one'));
+  assert.notEqual(a, signingKeyFingerprint('secret-two'));
+  assert.ok(!a.includes('secret'));
 });

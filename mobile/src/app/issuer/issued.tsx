@@ -59,7 +59,7 @@ export default function IssuedCredentialsScreen() {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <Text style={styles.heading}>Issued qualifications</Text>
+      <Text style={styles.heading} accessibilityRole="header">Issued qualifications</Text>
       {loading ? (
         <Text style={styles.emptyText}>Loading issued qualifications…</Text>
       ) : error && credentials.length === 0 ? (

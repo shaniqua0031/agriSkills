@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { useAuth } from '@/context/auth';
 
 export default function LearnerProfileScreen() {
-  const { user, logout } = useAuth();
+  const { user, logout, isOfflineSession } = useAuth();
 
   const handleLogout = () => {
     logout();
@@ -13,10 +13,10 @@ export default function LearnerProfileScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>Profile</Text>
+      <Text style={styles.heading} accessibilityRole="header">Profile</Text>
       <Text style={styles.name}>{user?.name ?? 'Unknown user'}</Text>
-      <Text style={styles.email}>{user?.email ?? 'No email available'}</Text>
-      <Pressable style={styles.button} onPress={handleLogout}>
+      <Text style={styles.email}>{user?.email || (isOfflineSession ? 'Shown when you are back online' : 'No email available')}</Text>
+      <Pressable style={styles.button} onPress={handleLogout} accessibilityRole="button">
         <Text style={styles.buttonText}>Log out</Text>
       </Pressable>
     </View>

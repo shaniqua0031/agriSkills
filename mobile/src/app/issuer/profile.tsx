@@ -13,10 +13,10 @@ export default function IssuerProfileScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>Issuer profile</Text>
+      <Text style={styles.heading} accessibilityRole="header">Issuer profile</Text>
       <Text style={styles.name}>{user?.name ?? 'Unknown user'}</Text>
       <Text style={styles.email}>{user?.email ?? ''}</Text>
-      <Pressable style={styles.button} onPress={handleLogout}>
+      <Pressable style={styles.button} onPress={handleLogout} accessibilityRole="button">
         <Text style={styles.buttonText}>Log out</Text>
       </Pressable>
     </View>

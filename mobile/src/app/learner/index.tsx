@@ -1,46 +1,24 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Link, router } from 'expo-router';
 
 import { CredentialThumb } from '@/components/credential-thumb';
+import { DownloadButton } from '@/components/download-button';
+import { ExpiryReminder, ExpiryTag } from '@/components/expiry-reminder';
+import { OfflineCopyNotice } from '@/components/offline-copy-notice';
+import { VerificationHistory } from '@/components/verification-history';
 import { useAuth } from '@/context/auth';
-import { apiFetch } from '@/lib/api';
-
-type PassportCredential = {
-  id: string;
-  title: string;
-  status: string;
-  skills: string[];
-  publicId: string;
-  issueDate: string;
-  expiryDate?: string | null;
-};
+import { useLearnerCredentials } from '@/hooks/use-learner-credentials';
+import { downloadPassport } from '@/lib/downloads';
+import { expiryLabel, isExpiringSoon } from '@/lib/expiry';
+import { STATUS_LABELS } from '@/lib/pdf';
 
 export default function LearnerPassportScreen() {
   const { user, token, logout } = useAuth();
-  const [credentials, setCredentials] = useState<PassportCredential[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { credentials, loading, error, savedAt, reload } = useLearnerCredentials();
 
   useEffect(() => {
-    if (!user || !token) {
-      router.replace('/');
-      return;
-    }
-
-    apiFetch<{ credentials: PassportCredential[]; stats: { total: number; verified: number } }>(
-      '/learner/passport',
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      },
-    )
-      .then((data) => {
-        setCredentials(data.credentials ?? []);
-      })
-      .catch((requestError: unknown) => {
-        setError(requestError instanceof Error ? requestError.message : 'Could not load your passport.');
-      })
-      .finally(() => setLoading(false));
+    if (!user || !token) router.replace('/');
   }, [token, user]);
 
   if (!user) {
@@ -60,9 +38,9 @@ export default function LearnerPassportScreen() {
         <View style={styles.headerRow}>
           <View style={styles.headerCopy}>
             <Text style={styles.kicker}>Passport</Text>
-            <Text style={styles.name}>{user.name}</Text>
+            <Text style={styles.name} accessibilityRole="header">{user.name}</Text>
           </View>
-          <Pressable onPress={handleLogout} style={styles.logoutButton}>
+          <Pressable onPress={handleLogout} style={styles.logoutButton} accessibilityRole="button" accessibilityLabel="Log out">
             <Text style={styles.logoutText}>Logout</Text>
           </Pressable>
         </View>
@@ -79,8 +57,20 @@ export default function LearnerPassportScreen() {
         </View>
       </View>
 
+      {savedAt ? <OfflineCopyNotice savedAt={savedAt} onRetry={reload} /> : null}
+
+      <ExpiryReminder credentials={credentials} />
+
+      {!loading && !error && credentials.length > 0 ? (
+        <DownloadButton
+          label="Download passport (PDF)"
+          hint="Makes a one-page summary of your credentials for job applications"
+          run={() => downloadPassport(token!, user.name, credentials, savedAt)}
+        />
+      ) : null}
+
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Recent achievements</Text>
+        <Text style={styles.sectionTitle} accessibilityRole="header">Recent achievements</Text>
       </View>
 
       {loading ? (
@@ -92,17 +82,23 @@ export default function LearnerPassportScreen() {
       ) : (
         credentials.slice(0, 3).map((credential) => (
           <Link href={`/learner/credentials/${credential.id}`} key={credential.id} asChild>
-            <Pressable style={styles.credentialCard}>
+            <Pressable
+              style={styles.credentialCard}
+              accessibilityRole="link"
+              accessibilityLabel={`${credential.title}, ${STATUS_LABELS[credential.status] ?? credential.status}${isExpiringSoon(credential) ? `, ${expiryLabel(credential).toLowerCase()}` : ''}. Open details`}>
               <CredentialThumb title={credential.title} />
               <View style={styles.cardCopy}>
                 <Text style={styles.cardTitle}>{credential.title}</Text>
-                <Text style={styles.cardStatus}>{credential.status}</Text>
+                <Text style={styles.cardStatus}>{STATUS_LABELS[credential.status] ?? credential.status}</Text>
                 <Text style={styles.cardMeta}>{credential.skills.join(', ')}</Text>
+                <ExpiryTag credential={credential} />
               </View>
             </Pressable>
           </Link>
         ))
       )}
+
+      <VerificationHistory />
     </ScrollView>
   );
 }
@@ -149,8 +145,10 @@ const styles = StyleSheet.create({
   logoutButton: {
     backgroundColor: '#ffffff',
     borderRadius: 10,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 8,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   logoutText: {
     color: '#1e1e1e',

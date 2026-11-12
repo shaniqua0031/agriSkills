@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
   kicker: { color: '#bdbdbd', fontWeight: '700', letterSpacing: 1, fontSize: 12, textTransform: 'uppercase' },
   title: { fontSize: 26, fontWeight: '800', color: '#ffffff', marginTop: 4 },
   subtitle: { color: '#cfcfcf', fontSize: 13, marginTop: 2 },
-  logoutButton: { backgroundColor: '#ffffff', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
+  logoutButton: { backgroundColor: '#ffffff', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8, minHeight: 44, justifyContent: 'center' },
   logoutText: { color: '#1e1e1e', fontWeight: '700' },
   summaryRow: { flexDirection: 'row', gap: 12 },
   summaryCard: { flex: 1, backgroundColor: 'rgba(255, 255, 255, 0.1)', borderRadius: 14, padding: 16 },

@@ -54,7 +54,7 @@ export default function IssuerDashboardScreen() {
             <Text style={styles.kicker}>Issuer dashboard</Text>
             <Text style={styles.title}>{user?.name}</Text>
           </View>
-          <Pressable onPress={handleLogout} style={styles.logoutButton}>
+          <Pressable onPress={handleLogout} style={styles.logoutButton} accessibilityRole="button" accessibilityLabel="Log out">
             <Text style={styles.logoutText}>Logout</Text>
           </Pressable>
         </View>
@@ -73,7 +73,7 @@ export default function IssuerDashboardScreen() {
 
       <IssuerApprovalNotice />
 
-      <Text style={styles.sectionTitle}>Latest issued credentials</Text>
+      <Text style={styles.sectionTitle} accessibilityRole="header">Latest issued credentials</Text>
       {loading ? (
         <Text style={styles.emptyText}>Loading issued credentials…</Text>
       ) : error ? (
@@ -83,7 +83,10 @@ export default function IssuerDashboardScreen() {
       ) : (
         credentials.slice(0, 4).map((credential) => (
           <Link href={`/issuer/issued`} key={credential.id} asChild>
-            <Pressable style={styles.card}>
+            <Pressable
+              style={styles.card}
+              accessibilityRole="link"
+              accessibilityLabel={`${credential.title}, issued to ${credential.learner?.name ?? 'learner'}, ${credential.status.toLowerCase()}`}>
               <CredentialThumb title={credential.title} />
               <View style={styles.cardCopy}>
                 <Text style={styles.cardTitle}>{credential.title}</Text>
@@ -105,7 +108,7 @@ const styles = StyleSheet.create({
   headerCopy: { flex: 1 },
   kicker: { color: '#bdbdbd', fontWeight: '700', letterSpacing: 1, fontSize: 12, textTransform: 'uppercase' },
   title: { fontSize: 26, fontWeight: '700', color: '#ffffff', marginTop: 6 },
-  logoutButton: { backgroundColor: '#ffffff', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
+  logoutButton: { backgroundColor: '#ffffff', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8, minHeight: 44, justifyContent: 'center' },
   logoutText: { color: '#1e1e1e', fontWeight: '700' },
   summaryRow: { flexDirection: 'row', gap: 12 },
   summaryCard: { flex: 1, backgroundColor: 'rgba(255, 255, 255, 0.1)', borderRadius: 14, padding: 16 },

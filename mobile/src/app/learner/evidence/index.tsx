@@ -28,7 +28,7 @@ export default function EvidenceListScreen() {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <Text style={styles.heading}>Skills evidence</Text>
+      <Text style={styles.heading} accessibilityRole="header">Skills evidence</Text>
       <Text style={styles.intro}>
         Record proof of skills you already have, such as a photo of your work, a short note and who supervised you.
         It can be reviewed for recognition of prior learning (RPL).

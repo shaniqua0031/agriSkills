@@ -68,7 +68,7 @@ export default function IssueCredentialScreen() {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <Text style={styles.heading}>Issue credential</Text>
+      <Text style={styles.heading} accessibilityRole="header">Issue credential</Text>
       <IssuerApprovalNotice />
       <TextInput value={learnerEmail} onChangeText={setLearnerEmail} placeholder="Learner email" style={styles.input} />
       <TextInput value={title} onChangeText={setTitle} placeholder="Qualification title" style={styles.input} />

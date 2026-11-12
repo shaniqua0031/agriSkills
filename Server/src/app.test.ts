@@ -127,6 +127,34 @@ test('share links and public verification', async (t) => {
       }
     });
 
+    await t.test('learner sees who checked their credential, without employer details', async () => {
+      const credential = await issue('Checked Course');
+      const { shareToken } = await shareAndGetToken(credential.id, learnerToken);
+      await verifyJson(shareToken);
+      await fetch(`${baseUrl}/verify/${shareToken}`);
+
+      const history = async (token: string, query = '') =>
+        fetch(`${baseUrl}/learner/verifications${query}`, { headers: json(token) });
+      const response = await history(learnerToken, `?credentialId=${credential.id}`);
+      assert.equal(response.status, 200);
+      const body = (await response.json()) as {
+        summary: { total: number; last30Days: number; lastCheckedAt: string | null };
+        events: Array<Record<string, unknown>>;
+      };
+      assert.equal(body.summary.total, 2);
+      assert.equal(body.summary.last30Days, 2);
+      assert.ok(body.summary.lastCheckedAt);
+      assert.deepEqual(body.events.map((event) => event.source), ['page', 'app'], 'newest first, with how it was opened');
+      assert.ok(body.events.every((event) => event.result === 'VERIFIED' && event.credentialTitle === 'Checked Course'));
+      assert.deepEqual(Object.keys(body.events[0]).sort(), ['createdAt', 'credentialId', 'credentialTitle', 'id', 'result', 'source']);
+
+      assert.equal((await history(issuerToken)).status, 403);
+      const otherLearner = await register('history-snoop', 'LEARNER');
+      assert.equal((await history(otherLearner, `?credentialId=${credential.id}`)).status, 404);
+      const empty = (await (await history(otherLearner)).json()) as { summary: { total: number } };
+      assert.equal(empty.summary.total, 0);
+    });
+
     await t.test('learner can list and revoke their links; revoked links stop working', async () => {
       const { shareToken, shareLink } = await shareAndGetToken('cred-2', learnerToken);
       const list = await fetch(`${baseUrl}/learner/credentials/cred-2/share-links`, { headers: json(learnerToken) });

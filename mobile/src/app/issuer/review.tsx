@@ -50,7 +50,7 @@ export default function ReviewEvidenceScreen() {
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(); }} />}>
       <Text style={styles.kicker}>Skills evidence</Text>
-      <Text style={styles.heading}>Evidence to review</Text>
+      <Text style={styles.heading} accessibilityRole="header">Evidence to review</Text>
       <Text style={styles.help}>
         Learners chose you to check proof of skills they already have. Approve it if the evidence shows the skill. If not,
         tell the learner why.

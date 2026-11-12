@@ -1,18 +1,16 @@
 {
   "expo": {
-    "name": "mobile",
+    "name": "AgriSkills Passport",
     "slug": "mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "mobile",
     "userInterfaceStyle": "automatic",
-    "ios": {
-      "icon": "./assets/expo.icon"
-    },
+    "ios": {},
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#1e1e1e",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -27,16 +25,21 @@
     },
     "web": {
       "output": "single",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "name": "AgriSkills Passport",
+      "shortName": "AgriSkills",
+      "description": "Your farming skills, verified: a learner-controlled record of qualifications, skills and evidence.",
+      "themeColor": "#1e1e1e",
+      "backgroundColor": "#f5f5f5"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#ffffff",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "imageWidth": 96
         }
       ],
       "expo-secure-store",
@@ -52,7 +55,8 @@
         {
           "locationWhenInUsePermission": "AgriSkills Passport adds a location stamp to evidence only when you choose to."
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true,

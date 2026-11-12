@@ -149,7 +149,7 @@ export default function NewEvidenceScreen() {
       <Pressable onPress={() => router.back()} accessibilityRole="button" style={styles.backLink}>
         <Text style={styles.backText}>‹ Back</Text>
       </Pressable>
-      <Text style={styles.heading}>Add evidence</Text>
+      <Text style={styles.heading} accessibilityRole="header">Add evidence</Text>
 
       <Text style={styles.label}>Skill *</Text>
       <TextInput value={skill} onChangeText={setSkill} placeholder="e.g. Drip irrigation installation" maxLength={120} style={styles.input} />
@@ -203,7 +203,7 @@ export default function NewEvidenceScreen() {
         <Text style={styles.help}>Location added: {stamp.latitude}, {stamp.longitude}</Text>
       ) : null}
 
-      <Text style={styles.sectionTitle}>Supervisor (optional)</Text>
+      <Text style={styles.sectionTitle} accessibilityRole="header">Supervisor (optional)</Text>
       <Text style={styles.help}>Someone who saw you do the work. The training provider reviewing your evidence may contact them.</Text>
       <TextInput value={supervisorName} onChangeText={setSupervisorName} placeholder="Supervisor's name" maxLength={120} style={styles.input} />
       <TextInput
@@ -215,7 +215,7 @@ export default function NewEvidenceScreen() {
         style={styles.input}
       />
 
-      <Text style={styles.sectionTitle}>Who should review it?</Text>
+      <Text style={styles.sectionTitle} accessibilityRole="header">Who should review it?</Text>
       <Text style={styles.help}>
         An approved training provider checks your evidence and approves it. Only the provider you choose can see it.
       </Text>

@@ -3,41 +3,48 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 
 import { CredentialBanner } from '@/components/credential-thumb';
+import { DownloadButton } from '@/components/download-button';
+import { ExpiryTag } from '@/components/expiry-reminder';
+import { OfflineCopyNotice } from '@/components/offline-copy-notice';
+import { VerificationHistory } from '@/components/verification-history';
 import { useAuth } from '@/context/auth';
-import { apiFetch } from '@/lib/api';
-
-type CredentialDetail = {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  status: string;
-  publicId: string;
-  issueDate: string;
-  expiryDate?: string | null;
-  skills: string[];
-  issuer?: { name: string };
-};
+import type { LearnerCredential } from '@/hooks/use-learner-credentials';
+import { ApiError, apiFetch } from '@/lib/api';
+import { downloadCertificate } from '@/lib/downloads';
+import { loadPassportCache } from '@/lib/passport-cache';
+import { STATUS_LABELS } from '@/lib/pdf';
 
 export default function CredentialDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { token } = useAuth();
-  const [credential, setCredential] = useState<CredentialDetail | null>(null);
+  const { token, user } = useAuth();
+  const [credential, setCredential] = useState<LearnerCredential | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [savedAt, setSavedAt] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!token || !id) return;
+    if (!token || !id || !user) return;
 
-    apiFetch<{ credential: CredentialDetail }>(`/learner/credentials/${id}`, {
+    apiFetch<{ credential: LearnerCredential }>(`/learner/credentials/${id}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then((data) => setCredential(data.credential))
-      .catch((requestError: unknown) => {
+      .then((data) => {
+        setCredential(data.credential);
+        setSavedAt(null);
+      })
+      .catch(async (requestError: unknown) => {
+        // No connection: show the copy saved on this device, if there is one.
+        const cached = requestError instanceof ApiError && requestError.status === 0 ? await loadPassportCache(user.id) : null;
+        const saved = cached?.credentials.find((item) => item.id === id);
+        if (cached && saved) {
+          setCredential(saved);
+          setSavedAt(cached.savedAt);
+          return;
+        }
         setError(requestError instanceof Error ? requestError.message : 'Could not load this credential.');
       })
       .finally(() => setLoading(false));
-  }, [id, token]);
+  }, [id, token, user]);
 
   if (!credential) {
     return (
@@ -53,10 +60,12 @@ export default function CredentialDetailScreen() {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+      {savedAt ? <OfflineCopyNotice savedAt={savedAt} /> : null}
       <CredentialBanner title={credential.title} />
       <Text style={styles.kicker}>Credential</Text>
-      <Text style={styles.title}>{credential.title}</Text>
-      <Text style={styles.badge}>{credential.status}</Text>
+      <Text style={styles.title} accessibilityRole="header">{credential.title}</Text>
+      <Text style={styles.badge}>{STATUS_LABELS[credential.status] ?? credential.status}</Text>
+      <ExpiryTag credential={credential} />
 
       <View style={styles.card}>
         <Text style={styles.label}>Issued by</Text>
@@ -75,11 +84,29 @@ export default function CredentialDetailScreen() {
         <Text style={styles.value}>{credential.publicId}</Text>
       </View>
 
-      <Text style={styles.label}>Description</Text>
-      <Text style={styles.value}>{credential.description}</Text>
+      {credential.status === 'ACTIVE' ? (
+        <DownloadButton
+          label="Download certificate (PDF)"
+          hint="Makes a certificate with a QR code employers can scan to verify it"
+          run={() => downloadCertificate(token!, user!.name, credential)}
+        />
+      ) : (
+        <Text style={styles.note}>
+          A certificate can be downloaded while the credential is valid. This one is {(STATUS_LABELS[credential.status] ?? credential.status).toLowerCase()}.
+        </Text>
+      )}
+
+      {credential.description ? (
+        <>
+          <Text style={styles.label}>Description</Text>
+          <Text style={styles.value}>{credential.description}</Text>
+        </>
+      ) : null}
 
       <Text style={styles.label}>Skills</Text>
-      <Text style={styles.value}>{credential.skills.join(', ')}</Text>
+      <Text style={[styles.value, styles.lastValue]}>{credential.skills.join(', ')}</Text>
+
+      <VerificationHistory credentialId={credential.id} limit={10} />
     </ScrollView>
   );
 }
@@ -136,6 +163,14 @@ const styles = StyleSheet.create({
     color: '#252525',
     fontSize: 15,
     lineHeight: 22,
+  },
+  lastValue: {
+    marginBottom: 16,
+  },
+  note: {
+    color: '#5b5b5b',
+    fontSize: 14,
+    marginBottom: 12,
   },
   emptyText: {
     color: '#5b5b5b',

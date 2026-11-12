@@ -93,5 +93,9 @@ To set up a new, empty database, run `cd Server && npm run prisma:push`. `prisma
    - Cloudinary keys are optional. Without them, evidence photos are switched off. Password-reset emails are not set up on Render, so **Forgot password?** is off there.
 4. Click **Apply** and wait for both services to go live.
 5. Check that the URLs are `https://agriskills-api.onrender.com` and `https://agriskills-app.onrender.com`. If Render added a suffix to either name, update the URLs in `render.yaml` and push again.
+6. Open `https://agriskills-api.onrender.com/health` to check the settings without logging in:
+   - `signingKey` must match the output of `cd Server && npm run signing:fingerprint`. If it differs, the signing secret on Render is wrong. This is a one-way fingerprint, not the secret.
+   - `photoStorage` should be `cloudinary`. `disabled` means the Cloudinary keys are missing.
+   - `email` is `unavailable` until SMTP or Resend is set up.
 
 On the free plan the API sleeps after 15 minutes without traffic, so the first request after that takes about a minute.

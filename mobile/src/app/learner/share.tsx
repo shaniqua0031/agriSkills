@@ -153,7 +153,7 @@ export default function ShareCredentialScreen() {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <Text style={styles.eyebrow}>Share securely</Text>
-      <Text style={styles.heading}>{mode === 'profile' ? 'Share a profile' : 'Share a credential'}</Text>
+      <Text style={styles.heading} accessibilityRole="header">{mode === 'profile' ? 'Share a profile' : 'Share a credential'}</Text>
       <Text style={styles.subtitle}>
         {mode === 'profile'
           ? 'Choose several qualifications and share them all through one link and QR code that you can turn off at any time.'

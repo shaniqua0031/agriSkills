@@ -27,6 +27,13 @@ export function getSigningSecret() {
   return secret;
 }
 
+// A short, public fingerprint of the signing secret, shown by /health. Two servers with the same
+// fingerprint use the same secret, so a deployment can be checked against Server/.env without
+// revealing the secret itself (HMAC is one-way and only 12 hex characters are shown).
+export function signingKeyFingerprint(secret = getSigningSecret()) {
+  return createHmac('sha256', secret).update('agriskills-signing-key-fingerprint').digest('hex').slice(0, 12);
+}
+
 // Keys are listed in a fixed order so the same credential always produces the same bytes.
 export function canonicalCredentialPayload(credential: SignableCredential) {
   return JSON.stringify({

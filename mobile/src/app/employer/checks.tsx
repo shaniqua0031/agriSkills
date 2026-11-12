@@ -43,7 +43,7 @@ export default function EmployerChecksScreen() {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      <Text style={styles.heading}>Checked credentials</Text>
+      <Text style={styles.heading} accessibilityRole="header">Checked credentials</Text>
       <Text style={styles.subheading}>
         Everyone you have checked. Tap “Check again” before you hire, to see if anything changed.
       </Text>

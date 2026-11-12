@@ -1,41 +1,20 @@
-import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Link } from 'expo-router';
 
 import { CredentialThumb } from '@/components/credential-thumb';
-import { useAuth } from '@/context/auth';
-import { apiFetch } from '@/lib/api';
-
-type Credential = {
-  id: string;
-  title: string;
-  status: string;
-  skills: string[];
-  publicId: string;
-};
+import { ExpiryTag } from '@/components/expiry-reminder';
+import { OfflineCopyNotice } from '@/components/offline-copy-notice';
+import { useLearnerCredentials } from '@/hooks/use-learner-credentials';
+import { expiryLabel, isExpiringSoon } from '@/lib/expiry';
+import { STATUS_LABELS } from '@/lib/pdf';
 
 export default function LearnerCredentialsScreen() {
-  const { token, user } = useAuth();
-  const [credentials, setCredentials] = useState<Credential[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    if (!token || !user) return;
-
-    apiFetch<{ credentials: Credential[] }>('/learner/credentials', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((data) => setCredentials(data.credentials ?? []))
-      .catch((requestError: unknown) => {
-        setError(requestError instanceof Error ? requestError.message : 'Could not load credentials.');
-      })
-      .finally(() => setLoading(false));
-  }, [token, user]);
+  const { credentials, loading, error, savedAt, reload } = useLearnerCredentials();
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <Text style={styles.heading}>My credentials</Text>
+      <Text style={styles.heading} accessibilityRole="header">My credentials</Text>
+      {savedAt ? <OfflineCopyNotice savedAt={savedAt} onRetry={reload} /> : null}
 
       {loading ? (
         <Text style={styles.loadingText}>Loading certificates...</Text>
@@ -46,12 +25,16 @@ export default function LearnerCredentialsScreen() {
       ) : (
         credentials.map((credential) => (
           <Link href={`/learner/credentials/${credential.id}`} asChild key={credential.id}>
-            <Pressable style={styles.card}>
+            <Pressable
+              style={styles.card}
+              accessibilityRole="link"
+              accessibilityLabel={`${credential.title}, ${STATUS_LABELS[credential.status] ?? credential.status}${isExpiringSoon(credential) ? `, ${expiryLabel(credential).toLowerCase()}` : ''}. Open details`}>
               <CredentialThumb title={credential.title} />
               <View style={styles.cardCopy}>
                 <Text style={styles.title}>{credential.title}</Text>
-                <Text style={styles.badge}>{credential.status}</Text>
+                <Text style={styles.badge}>{STATUS_LABELS[credential.status] ?? credential.status}</Text>
                 <Text style={styles.meta}>Reference: {credential.publicId}</Text>
+                <ExpiryTag credential={credential} />
               </View>
             </Pressable>
           </Link>

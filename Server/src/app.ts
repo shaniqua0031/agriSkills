@@ -9,7 +9,7 @@ import { randomUUID } from 'node:crypto';
 import { networkInterfaces } from 'node:os';
 
 import { computeCredentialStatus, type Role, type CredentialRecord } from './domain.js';
-import { createEvidenceRouter } from './evidence.js';
+import { createEvidenceRouter, getStorageMode } from './evidence.js';
 import { createEmployerRouter } from './employer.js';
 import { createAccountCodes } from './account-codes.js';
 import { createProfileLinkRouter } from './profile-links.js';
@@ -22,8 +22,10 @@ import {
   getSigningSecret,
   hashShareToken,
   signCredential,
+  signingKeyFingerprint,
   verifyCredentialSignature,
 } from './integrity.js';
+import { emailDeliveryMode } from './mailer.js';
 
 dotenv.config();
 // Read once at startup so a missing production secret stops the server immediately.
@@ -231,6 +233,21 @@ export type ShareLink = {
 };
 
 const shareLinks: ShareLink[] = [];
+
+// Where a verification came from, shown to the learner in "Who checked".
+export type VerificationSource = 'page' | 'app' | 'employer' | 'profile';
+
+type VerificationEventRecord = {
+  id: string;
+  credentialId: string;
+  shareLinkId: string | null;
+  eventType: string;
+  details: string | null;
+  createdAt: string;
+};
+
+// In-memory audit log, used only when there is no database (automated tests).
+const verificationEvents: VerificationEventRecord[] = [];
 
 function mapDbUser(user: Prisma.UserGetPayload<object>): User {
   return {
@@ -510,7 +527,12 @@ async function revokeShareLink(link: ShareLink): Promise<ShareLink> {
 }
 
 async function logVerification(credentialId: string, shareLinkId: string | null, result: string, details?: string) {
-  if (!prisma) return;
+  if (!prisma) {
+    verificationEvents.unshift({
+      id: `event-${randomUUID()}`, credentialId, shareLinkId, eventType: result, details: details ?? null, createdAt: new Date().toISOString(),
+    });
+    return;
+  }
   try {
     await prisma.verificationEvent.create({ data: { credentialId, shareLinkId, eventType: result, details } });
   } catch (error) {
@@ -607,14 +629,14 @@ export type VerificationResult =
   | 'INVALID'
   | 'NOT_FOUND';
 
-async function verifyShareToken(token: string | undefined) {
+async function verifyShareToken(token: string | undefined, source: VerificationSource) {
   if (!token || !SHARE_TOKEN_PATTERN.test(token)) {
     return { result: 'NOT_FOUND' as VerificationResult };
   }
-  return verifyShareLink(await findShareLink({ tokenHash: hashShareToken(token) }));
+  return verifyShareLink(await findShareLink({ tokenHash: hashShareToken(token) }), source);
 }
 
-async function verifyShareLink(link: ShareLink | undefined) {
+async function verifyShareLink(link: ShareLink | undefined, source: VerificationSource) {
   if (!link) return { result: 'NOT_FOUND' as VerificationResult };
 
   const credential = await findCredential({ id: link.credentialId });
@@ -627,7 +649,7 @@ async function verifyShareLink(link: ShareLink | undefined) {
       ? 'LINK_EXPIRED'
       : checkCredential(credential);
 
-  await logVerification(credential.id, link.id, result);
+  await logVerification(credential.id, link.id, result, source);
   return { result, credential: showsCredentialDetails(result) ? credential : undefined, link };
 }
 
@@ -721,6 +743,11 @@ app.get('/health', (_req, res) => {
     ok: true,
     service: 'agri-skills-passport-api',
     storage: prisma ? 'postgresql' : 'memory-test',
+    // Deployment checks (no secrets): photo storage mode, whether account emails can be sent,
+    // and a fingerprint to compare the signing secret with Server/.env (npm run signing:fingerprint).
+    photoStorage: getStorageMode(),
+    email: emailDeliveryMode(),
+    signingKey: signingKeyFingerprint(),
   });
 });
 
@@ -964,6 +991,60 @@ app.get('/learner/credentials', authMiddleware, requireRole('LEARNER'), async (r
   res.json({ credentials: learnerCredentials });
 });
 
+/** Reads "page", "app", "employer" or "profile:<id>" (older rows: "profileLink:<id>" or empty). */
+function verificationSourceOf(details: string | null | undefined): VerificationSource {
+  if (details === 'page' || details === 'app' || details === 'employer') return details;
+  if (details?.startsWith('profile')) return 'profile';
+  return 'page';
+}
+
+const VERIFICATION_HISTORY_LIMIT = 100;
+
+// "Who checked": every time someone opened one of the learner's share or profile links.
+// Employers stay anonymous; the learner sees when, how and what result was shown.
+app.get('/learner/verifications', authMiddleware, requireRole('LEARNER'), async (req: any, res) => {
+  const learnerCredentials = await listCredentials({ learnerId: req.user.id });
+  const titles = new Map(learnerCredentials.map((credential) => [credential.id, credential.title]));
+  const onlyCredential = typeof req.query.credentialId === 'string' ? req.query.credentialId : null;
+  if (onlyCredential && !titles.has(onlyCredential)) {
+    return res.status(404).json({ error: 'Credential not found.' });
+  }
+  const credentialIds = onlyCredential ? [onlyCredential] : [...titles.keys()];
+
+  const rows: VerificationEventRecord[] = prisma
+    ? (await prisma.verificationEvent.findMany({
+        where: { credentialId: { in: credentialIds } },
+        orderBy: { createdAt: 'desc' },
+        take: VERIFICATION_HISTORY_LIMIT,
+      })).map((row) => ({ ...row, createdAt: row.createdAt.toISOString() }))
+    : verificationEvents.filter((event) => credentialIds.includes(event.credentialId)).slice(0, VERIFICATION_HISTORY_LIMIT);
+
+  const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const countEvents = async (since?: Date) => prisma
+    ? prisma.verificationEvent.count({
+        where: { credentialId: { in: credentialIds }, ...(since ? { createdAt: { gte: since } } : {}) },
+      })
+    : verificationEvents.filter((event) =>
+        credentialIds.includes(event.credentialId) && (!since || Date.parse(event.createdAt) >= since.getTime())).length;
+  const [total, last30Days] = await Promise.all([countEvents(), countEvents(monthAgo)]);
+
+  return res.json({
+    summary: {
+      total,
+      last30Days,
+      lastCheckedAt: rows[0]?.createdAt ?? null,
+    },
+    events: rows.map((row) => ({
+      id: row.id,
+      credentialId: row.credentialId,
+      credentialTitle: titles.get(row.credentialId) ?? 'Credential',
+      result: row.eventType,
+      source: verificationSourceOf(row.details),
+      createdAt: row.createdAt,
+    })),
+  });
+});
+
 app.get('/learner/credentials/:id', authMiddleware, requireRole('LEARNER'), async (req: any, res) => {
   const credential = await findCredential({ id: getRouteParam(req.params.id), learnerId: req.user.id });
   if (!credential) {
@@ -1165,14 +1246,14 @@ function renderVerificationPage(response: ReturnType<typeof makePublicVerificati
 
 app.get('/verify/:token', verificationRateLimit, async (req, res) => {
   setVerificationHeaders(res);
-  const response = makePublicVerificationResponse(await verifyShareToken(getRouteParam(req.params.token)));
+  const response = makePublicVerificationResponse(await verifyShareToken(getRouteParam(req.params.token), 'page'));
   const httpStatus = response.status === 'NOT_FOUND' ? 404 : response.status.startsWith('LINK_') ? 410 : 200;
   return res.status(httpStatus).send(renderVerificationPage(response));
 });
 
 app.get('/api/verify/:token', verificationRateLimit, async (req, res) => {
   setVerificationHeaders(res);
-  const response = makePublicVerificationResponse(await verifyShareToken(getRouteParam(req.params.token)));
+  const response = makePublicVerificationResponse(await verifyShareToken(getRouteParam(req.params.token), 'app'));
   const httpStatus = response.status === 'NOT_FOUND' ? 404 : response.status.startsWith('LINK_') ? 410 : 200;
   return res.status(httpStatus).json(response);
 });
@@ -1201,11 +1282,11 @@ app.use(createEmployerRouter({
   authMiddleware,
   requireRole,
   verifyToken: async (token) => {
-    const verification = await verifyShareToken(token);
+    const verification = await verifyShareToken(token, 'employer');
     return { shareLinkId: verification.link?.id ?? null, verification: makePublicVerificationResponse(verification) };
   },
   verifyLinkId: async (shareLinkId) =>
-    makePublicVerificationResponse(await verifyShareLink(await findShareLink({ id: shareLinkId }))),
+    makePublicVerificationResponse(await verifyShareLink(await findShareLink({ id: shareLinkId }), 'employer')),
 }));
 
 // Curated profiles: one link and QR code for several of a learner's credentials.
@@ -1223,7 +1304,7 @@ app.use(createProfileLinkRouter({
   findUserName: async (id) => (await findUserById(id))?.name ?? null,
   checkCredential: async (credential, profileLinkId) => {
     const result = checkCredential(credential);
-    await logVerification(credential.id, null, result, `profileLink:${profileLinkId}`);
+    await logVerification(credential.id, null, result, `profile:${profileLinkId}`);
     return {
       status: result,
       valid: result === 'VERIFIED',

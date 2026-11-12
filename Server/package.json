@@ -11,7 +11,8 @@
     "prisma:push": "prisma db push",
     "credentials:sign": "tsx prisma/sign-credentials.ts",
     "issuer:approve": "tsx prisma/approve-issuer.ts",
-    "admin:grant": "tsx prisma/grant-admin.ts"
+    "admin:grant": "tsx prisma/grant-admin.ts",
+    "signing:fingerprint": "tsx prisma/signing-fingerprint.ts"
   },
   "keywords": [],
   "type": "module",

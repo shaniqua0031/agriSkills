@@ -112,7 +112,7 @@ export default function EmployerDashboardScreen() {
       </View>
 
       <View style={styles.panel}>
-        <Text style={styles.sectionTitle}>Check a credential</Text>
+        <Text style={styles.sectionTitle} accessibilityRole="header">Check a credential</Text>
         <Text style={styles.help}>
           Paste the link a job applicant shared with you, or scan their QR code with your phone camera and copy the link.
           The result is saved to your Checked list.
@@ -166,7 +166,7 @@ export default function EmployerDashboardScreen() {
       </View>
 
       <View style={styles.sectionRow}>
-        <Text style={styles.sectionTitle}>Recently checked</Text>
+        <Text style={styles.sectionTitle} accessibilityRole="header">Recently checked</Text>
         {checks.length > 0 ? (
           <Link href="/employer/checks" asChild>
             <Pressable accessibilityRole="link" hitSlop={6}>
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
   headerCopy: { flex: 1 },
   kicker: { color: '#bdbdbd', fontWeight: '700', letterSpacing: 1, fontSize: 12, textTransform: 'uppercase' },
   title: { fontSize: 26, fontWeight: '700', color: '#ffffff', marginTop: 6 },
-  logoutButton: { backgroundColor: '#ffffff', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
+  logoutButton: { backgroundColor: '#ffffff', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8, minHeight: 44, justifyContent: 'center' },
   logoutText: { color: '#1e1e1e', fontWeight: '700' },
   summaryRow: { flexDirection: 'row', gap: 10 },
   summaryCard: { flex: 1, backgroundColor: 'rgba(255, 255, 255, 0.1)', borderRadius: 14, padding: 14 },
