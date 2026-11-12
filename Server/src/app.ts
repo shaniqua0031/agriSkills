@@ -12,6 +12,8 @@ import { computeCredentialStatus, type Role, type CredentialRecord } from './dom
 import { createEvidenceRouter } from './evidence.js';
 import { createEmployerRouter } from './employer.js';
 import { createAccountCodes } from './account-codes.js';
+import { createProfileLinkRouter } from './profile-links.js';
+import { badge, escapeHtml, field, formatPageDate, renderPublicPage, skillsField } from './public-page.js';
 import {
   SHARE_TOKEN_PATTERN,
   SIGNATURE_ALGORITHM,
@@ -507,10 +509,10 @@ async function revokeShareLink(link: ShareLink): Promise<ShareLink> {
   return link;
 }
 
-async function logVerification(credentialId: string, shareLinkId: string, result: string) {
+async function logVerification(credentialId: string, shareLinkId: string | null, result: string, details?: string) {
   if (!prisma) return;
   try {
-    await prisma.verificationEvent.create({ data: { credentialId, shareLinkId, eventType: result } });
+    await prisma.verificationEvent.create({ data: { credentialId, shareLinkId, eventType: result, details } });
   } catch (error) {
     // An audit-log failure must not hide the verification result from the employer.
     console.error('Could not record verification event:', error);
@@ -619,43 +621,51 @@ async function verifyShareLink(link: ShareLink | undefined) {
   if (!credential) return { result: 'NOT_FOUND' as VerificationResult };
 
   const linkStatus = toPublicShareLink(link).status;
-  let result: VerificationResult;
-  if (linkStatus === 'REVOKED') {
-    result = 'LINK_REVOKED';
-  } else if (linkStatus === 'EXPIRED') {
-    result = 'LINK_EXPIRED';
-  } else if (!verifyCredentialSignature(credential)) {
-    result = 'INVALID';
-  } else {
-    const status = computeCredentialStatus(credential);
-    result = status === 'ACTIVE' ? 'VERIFIED' : status;
-  }
+  const result: VerificationResult = linkStatus === 'REVOKED'
+    ? 'LINK_REVOKED'
+    : linkStatus === 'EXPIRED'
+      ? 'LINK_EXPIRED'
+      : checkCredential(credential);
 
   await logVerification(credential.id, link.id, result);
-  const showsCredential = ['VERIFIED', 'EXPIRED', 'REVOKED', 'PENDING'].includes(result);
-  return { result, credential: showsCredential ? credential : undefined, link };
+  return { result, credential: showsCredentialDetails(result) ? credential : undefined, link };
+}
+
+/** The credential's own result (integrity first, then status), ignoring how it was shared. */
+function checkCredential(credential: Credential): VerificationResult {
+  if (!verifyCredentialSignature(credential)) return 'INVALID';
+  const status = computeCredentialStatus(credential);
+  return status === 'ACTIVE' ? 'VERIFIED' : status;
+}
+
+/** Failed integrity checks and link problems reveal no credential details. */
+function showsCredentialDetails(result: VerificationResult) {
+  return ['VERIFIED', 'EXPIRED', 'REVOKED', 'PENDING'].includes(result);
+}
+
+/** The credential fields an employer may see on a public page. */
+function publicCredentialFields(credential: Credential) {
+  const issuer = credential.issuer ?? users.find((user) => user.id === credential.issuerId);
+  return {
+    title: credential.title,
+    issuer: issuer ? issuer.name : 'Unknown issuer',
+    issueDate: credential.issueDate,
+    expiryDate: credential.expiryDate ?? null,
+    publicId: credential.publicId,
+    skills: credential.skills,
+  };
 }
 
 function makePublicVerificationResponse(verification: Awaited<ReturnType<typeof verifyShareToken>>) {
   const { result, credential } = verification;
   const learner = credential && (credential.learner ?? users.find((user) => user.id === credential.learnerId));
-  const issuer = credential && (credential.issuer ?? users.find((user) => user.id === credential.issuerId));
 
   return {
     valid: result === 'VERIFIED',
     status: result,
     message: verificationMessage(result),
     learner: learner ? { name: learner.name } : null,
-    credential: credential
-      ? {
-          title: credential.title,
-          issuer: issuer ? issuer.name : 'Unknown issuer',
-          issueDate: credential.issueDate,
-          expiryDate: credential.expiryDate ?? null,
-          publicId: credential.publicId,
-          skills: credential.skills,
-        }
-      : null,
+    credential: credential ? publicCredentialFields(credential) : null,
     linkExpiresAt: credential ? verification.link?.expiresAt ?? null : null,
   };
 }
@@ -1109,19 +1119,6 @@ function setVerificationHeaders(res: express.Response) {
   res.set('X-Robots-Tag', 'noindex');
 }
 
-function escapeHtml(value: string) {
-  return value.replace(/[&<>"']/g, (character) => {
-    const entities: Record<string, string> = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;',
-    };
-    return entities[character];
-  });
-}
-
 function publicStatusLabel(result: VerificationResult) {
   switch (result) {
     case 'VERIFIED':
@@ -1144,35 +1141,26 @@ function publicStatusLabel(result: VerificationResult) {
 }
 
 function renderVerificationPage(response: ReturnType<typeof makePublicVerificationResponse>) {
-  const result = response.status;
-  const statusLabel = publicStatusLabel(result);
-  const palette = result === 'VERIFIED'
-    ? { background: '#e5f4e9', color: '#1d7040' }
-    : result === 'REVOKED' || result === 'INVALID' || result === 'NOT_FOUND'
-      ? { background: '#fbe9e7', color: '#9a352c' }
-      : result === 'PENDING'
-        ? { background: '#e8eefb', color: '#385a96' }
-        : { background: '#fff3df', color: '#9a5c15' };
-  const field = (label: string, value: string) =>
-    `<div class="field"><span class="label">${label}</span><span class="value">${value}</span></div>`;
-
+  const statusLabel = publicStatusLabel(response.status);
   let details = '';
   if (response.credential) {
     const { credential } = response;
-    const skills = credential.skills.map((skill) => `<span class="skill">${escapeHtml(skill)}</span>`).join('');
     details = [
       field('Learner', escapeHtml(response.learner?.name ?? 'Unknown learner')),
       field('Qualification', escapeHtml(credential.title)),
       field('Issued by', escapeHtml(credential.issuer)),
-      field('Issue date', escapeHtml(new Date(credential.issueDate).toLocaleDateString('en-ZA'))),
-      field('Expiry date', credential.expiryDate ? escapeHtml(new Date(credential.expiryDate).toLocaleDateString('en-ZA')) : 'No expiry'),
+      field('Issue date', escapeHtml(formatPageDate(credential.issueDate))),
+      field('Expiry date', credential.expiryDate ? escapeHtml(formatPageDate(credential.expiryDate)) : 'No expiry'),
       field('Public reference', escapeHtml(credential.publicId)),
-      `<div class="field"><span class="label">Skills</span><div class="skills">${skills}</div></div>`,
-      response.linkExpiresAt ? field('This link expires', escapeHtml(new Date(response.linkExpiresAt).toLocaleDateString('en-ZA'))) : '',
+      skillsField(credential.skills),
+      response.linkExpiresAt ? field('This link expires', escapeHtml(formatPageDate(response.linkExpiresAt))) : '',
     ].join('');
   }
 
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><meta name="robots" content="noindex"><meta name="theme-color" content="#f3f7f3"><title>${statusLabel} · AgriSkills Passport</title><style>*{box-sizing:border-box}body{margin:0;padding:24px;background:#f3f7f3;color:#173424;font-family:Arial,sans-serif}.card{max-width:660px;margin:5vh auto;background:#fff;border:1px solid #e1e9e2;border-radius:20px;padding:30px;box-shadow:0 12px 30px rgba(23,52,36,.07)}.brand{font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#34754b}.badge{display:inline-block;margin-top:24px;padding:8px 12px;border-radius:999px;background:${palette.background};color:${palette.color};font-size:12px;font-weight:700}h1{font-size:28px;line-height:1.2;margin:14px 0 10px}.message{color:#4c6253;line-height:1.6;margin:0 0 18px}.field{border-top:1px solid #edf1ed;padding:13px 0}.label{display:block;color:#718076;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px}.value{color:#243b2c;font-size:15px;line-height:1.5}.skills{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.skill{background:#edf5ef;border-radius:999px;color:#315b3d;padding:7px 10px;font-size:12px}.note{border-top:1px solid #edf1ed;color:#758078;font-size:12px;line-height:1.5;margin-top:20px;padding-top:16px}@media(max-width:520px){body{padding:14px}.card{padding:22px;margin:3vh auto}h1{font-size:24px}}</style></head><body><main class="card"><div class="brand">AgriSkills Passport</div><div class="badge">${statusLabel}</div><h1>${statusLabel}</h1><p class="message">${escapeHtml(response.message)}</p>${details}<p class="note">Checked just now against the issuer's records and an HMAC-SHA256 integrity signature. This is a simplified project scheme, not a W3C Verifiable Credential or Open Badge.</p></main></body></html>`;
+  return renderPublicPage({
+    title: statusLabel,
+    body: `${badge(statusLabel, response.status)}<h1>${escapeHtml(statusLabel)}</h1><p class="message">${escapeHtml(response.message)}</p>${details}`,
+  });
 }
 
 app.get('/verify/:token', verificationRateLimit, async (req, res) => {
@@ -1218,6 +1206,32 @@ app.use(createEmployerRouter({
   },
   verifyLinkId: async (shareLinkId) =>
     makePublicVerificationResponse(await verifyShareLink(await findShareLink({ id: shareLinkId }))),
+}));
+
+// Curated profiles: one link and QR code for several of a learner's credentials.
+app.use(createProfileLinkRouter({
+  prisma,
+  authMiddleware,
+  requireRole,
+  publicBaseUrl,
+  maxDays: MAX_SHARE_DAYS,
+  defaultDays: DEFAULT_SHARE_DAYS,
+  setVerificationHeaders,
+  findOwnCredential: (id, learnerId) => findCredential({ id, learnerId }),
+  findCredential: (id) => findCredential({ id }),
+  isShareable: (credential) => computeCredentialStatus(credential) === 'ACTIVE',
+  findUserName: async (id) => (await findUserById(id))?.name ?? null,
+  checkCredential: async (credential, profileLinkId) => {
+    const result = checkCredential(credential);
+    await logVerification(credential.id, null, result, `profileLink:${profileLinkId}`);
+    return {
+      status: result,
+      valid: result === 'VERIFIED',
+      message: verificationMessage(result),
+      label: publicStatusLabel(result),
+      credential: showsCredentialDetails(result) ? publicCredentialFields(credential) : null,
+    };
+  },
 }));
 
 app.use((error: unknown, _req: express.Request, res: express.Response, next: express.NextFunction) => {

@@ -4,10 +4,10 @@ import { Link, router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 
 import { AuthButton } from '@/components/auth/auth-button';
 import { FormField } from '@/components/auth/form-field';
-import { StatusPill, VerificationResultCard } from '@/components/verification-result';
+import { ProfileResultCard, StatusPill, VerificationResultCard } from '@/components/verification-result';
 import { useAuth } from '@/context/auth';
-import { apiFetch } from '@/lib/api';
-import { extractToken, type EmployerCheck, type VerificationResult } from '@/lib/verification';
+import { API_BASE_URL, apiFetch } from '@/lib/api';
+import { parseShareLink, type EmployerCheck, type ProfileVerification, type VerificationResult } from '@/lib/verification';
 
 type CheckResponse = { check: EmployerCheck | null; verification: VerificationResult };
 
@@ -22,6 +22,8 @@ export default function EmployerDashboardScreen() {
   const [error, setError] = useState('');
   const [checking, setChecking] = useState(false);
   const [result, setResult] = useState<CheckResponse | null>(null);
+  // Profile links (several credentials) are shown but not saved: the Checked list holds single credentials.
+  const [profile, setProfile] = useState<ProfileVerification | null>(null);
 
   const auth = { Authorization: `Bearer ${token}` };
 
@@ -43,13 +45,23 @@ export default function EmployerDashboardScreen() {
 
   const check = async () => {
     setResult(null);
+    setProfile(null);
     setError('');
-    if (!extractToken(link)) {
+    const parsed = parseShareLink(link);
+    if (!parsed) {
       setLinkError('Paste the full verification link the learner shared, e.g. https://…/verify/AbC123…');
       return;
     }
     setChecking(true);
     try {
+      if (parsed.kind === 'profile') {
+        // Public endpoint; it answers 404/410 with a normal result body.
+        const response = await fetch(`${API_BASE_URL}/api/profile/${parsed.token}`);
+        const body = (await response.json()) as ProfileVerification;
+        if (!body?.status) throw new Error("Couldn't check this link right now.");
+        setProfile(body);
+        return;
+      }
       const data = await apiFetch<CheckResponse>('/employer/checks', {
         method: 'POST',
         headers: auth,
@@ -139,6 +151,15 @@ export default function EmployerDashboardScreen() {
             <VerificationResultCard result={result.verification} />
             <Text style={styles.savedText}>
               {result.check ? 'Saved to your Checked list.' : 'Not saved: this link does not match any shared credential.'}
+            </Text>
+          </>
+        ) : null}
+
+        {profile ? (
+          <>
+            <ProfileResultCard result={profile} />
+            <Text style={styles.savedText}>
+              Profile links are not saved to your Checked list. Ask the learner for single credential links if you want to keep them.
             </Text>
           </>
         ) : null}

@@ -3,8 +3,10 @@ import { ActivityIndicator, Pressable, ScrollView, Share, StyleSheet, Text, View
 import * as Clipboard from 'expo-clipboard';
 import QRCode from 'react-native-qrcode-svg';
 
+import { ProfileShare } from '@/components/profile-share';
 import { useAuth } from '@/context/auth';
 import { apiFetch } from '@/lib/api';
+import { EXPIRY_OPTIONS, expiryLabel, formatShareDate as formatDate } from '@/lib/share-options';
 
 type CredentialOption = {
   id: string;
@@ -20,16 +22,10 @@ type ShareLink = {
   createdAt: string;
 };
 
-// The server accepts up to 365 days (MAX_SHARE_DAYS in Server/src/app.ts).
-const EXPIRY_OPTIONS = [7, 30, 90, 365];
-const expiryLabel = (days: number) => (days === 365 ? '1 year' : `${days} days`);
-
-function formatDate(value: string | null) {
-  return value ? new Date(value).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Never';
-}
-
 export default function ShareCredentialScreen() {
   const { token } = useAuth();
+  // 'single': one credential per link. 'profile': several credentials in one link (curated profile).
+  const [mode, setMode] = useState<'single' | 'profile'>('single');
   const [credentials, setCredentials] = useState<CredentialOption[]>([]);
   const [selectedId, setSelectedId] = useState('');
   const [expiresInDays, setExpiresInDays] = useState(30);
@@ -157,8 +153,28 @@ export default function ShareCredentialScreen() {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <Text style={styles.eyebrow}>Share securely</Text>
-      <Text style={styles.heading}>Share a credential</Text>
-      <Text style={styles.subtitle}>Choose a qualification and create a private verification link that you can turn off at any time.</Text>
+      <Text style={styles.heading}>{mode === 'profile' ? 'Share a profile' : 'Share a credential'}</Text>
+      <Text style={styles.subtitle}>
+        {mode === 'profile'
+          ? 'Choose several qualifications and share them all through one link and QR code that you can turn off at any time.'
+          : 'Choose a qualification and create a private verification link that you can turn off at any time.'}
+      </Text>
+
+      <View accessibilityRole="tablist" style={styles.modeRow}>
+        {([['single', 'One credential'], ['profile', 'Profile (several)']] as const).map(([value, label]) => {
+          const isSelected = mode === value;
+          return (
+            <Pressable
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isSelected }}
+              key={value}
+              onPress={() => setMode(value)}
+              style={[styles.modeButton, isSelected && styles.modeButtonSelected]}>
+              <Text style={[styles.modeText, isSelected && styles.modeTextSelected]}>{label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
 
       {loadingCredentials ? (
         <View style={styles.stateCard}>
@@ -170,6 +186,8 @@ export default function ShareCredentialScreen() {
           <Text style={styles.stateTitle}>No credentials to share</Text>
           <Text style={styles.stateText}>Credentials issued to you will appear here.</Text>
         </View>
+      ) : mode === 'profile' && token ? (
+        <ProfileShare credentials={credentials} token={token} />
       ) : (
         <>
           <Text style={styles.sectionLabel}>Select qualification</Text>
@@ -318,6 +336,11 @@ const styles = StyleSheet.create({
   eyebrow: { color: '#1e1e1e', fontSize: 12, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' },
   heading: { color: '#2d2d2d', fontSize: 28, fontWeight: '700', marginTop: 6 },
   subtitle: { color: '#707070', fontSize: 14, lineHeight: 20, marginTop: 6, marginBottom: 22 },
+  modeRow: { backgroundColor: '#e9e9e9', borderRadius: 12, flexDirection: 'row', gap: 4, marginBottom: 20, padding: 4 },
+  modeButton: { alignItems: 'center', borderRadius: 9, flex: 1, justifyContent: 'center', minHeight: 40, paddingHorizontal: 8 },
+  modeButtonSelected: { backgroundColor: '#1d1d1d' },
+  modeText: { color: '#474747', fontSize: 13, fontWeight: '700' },
+  modeTextSelected: { color: '#fff' },
   sectionLabel: { color: '#474747', fontSize: 13, fontWeight: '700', marginBottom: 9, marginTop: 4 },
   options: { gap: 9, marginBottom: 18 },
   option: { alignItems: 'center', backgroundColor: '#fff', borderColor: '#e7e7e7', borderRadius: 13, borderWidth: 1, flexDirection: 'row', padding: 13 },

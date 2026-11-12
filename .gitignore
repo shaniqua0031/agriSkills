@@ -20,3 +20,6 @@ web-build/
 .vscode/
 *.log
 .DS_Store
+
+# Word lock files created while a document is open
+~$*

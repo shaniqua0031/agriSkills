@@ -30,6 +30,18 @@ export type EmployerCheck = {
   canRecheck: boolean;
 };
 
+/** The public result of a curated profile link (several credentials, see Server/src/profile-links.ts). */
+export type ProfileVerification = {
+  valid: boolean;
+  status: string;
+  message: string;
+  title: string | null;
+  learner: { name: string } | null;
+  verifiedCount: number;
+  credentials: Array<Pick<VerificationResult, 'valid' | 'status' | 'message' | 'credential'>>;
+  linkExpiresAt: string | null;
+};
+
 const TOKEN = /^[A-Za-z0-9_-]{43}$/;
 
 /** Accepts a full share link (…/verify/<token>) or just the token. */
@@ -40,8 +52,17 @@ export function extractToken(input: string) {
   return match?.[1] ?? null;
 }
 
+/** A pasted link: a curated profile (…/profile/<token>) or one credential (…/verify/<token> or just the token). */
+export function parseShareLink(input: string): { kind: 'profile' | 'credential'; token: string } | null {
+  const profile = /\/profile\/([A-Za-z0-9_-]{43})(?:[/?#]|$)/.exec(input.trim());
+  if (profile) return { kind: 'profile', token: profile[1] };
+  const token = extractToken(input);
+  return token ? { kind: 'credential', token } : null;
+}
+
 export const STATUS_STYLE: Record<string, { label: string; color: string; background: string }> = {
   VERIFIED: { label: 'Verified', color: '#141414', background: '#dcfce7' },
+  PARTLY_VERIFIED: { label: 'Some need a look', color: '#7a4a00', background: '#fff1d6' },
   EXPIRED: { label: 'Expired', color: '#7a4a00', background: '#fff1d6' },
   PENDING: { label: 'Not active yet', color: '#7a4a00', background: '#fff1d6' },
   REVOKED: { label: 'Revoked', color: '#8a1c12', background: '#fdecea' },

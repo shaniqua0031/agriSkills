@@ -40,6 +40,16 @@ http://<your-laptop-ip>:3000/verify/<random-token>
 
 The link is shown only once (the server stores just a SHA-256 hash of the token). Learners can turn a link off from the same screen; turned-off and expired links return `410` and reveal no credential details.
 
+**Share a profile (several credentials in one link):** on the **Share** tab, switch to **Profile (several)**, tick up to 20 active credentials (they appear in the order you tick them), add an optional title such as "Farm supervisor application", pick an expiry and tap **Create profile link**. The link looks like `http://<your-laptop-ip>:3000/profile/<random-token>`. The page checks each credential separately, so one revoked credential shows as revoked while the others still show as verified. The same rules apply as for single links: the link is shown once, only its hash is stored, and a turned-off or expired profile link reveals nothing. **Verify a credential** and the employer dashboard accept profile links too; the employer's Checked list only saves single credential links. This needs the `ProfileLink` and `ProfileLinkCredential` tables: run `npx prisma db push` in `Server/` once.
+
+| Endpoint | Who | What |
+| --- | --- | --- |
+| `POST /learner/profile-links` | Learner | Body `{ credentialIds: string[], expiresInDays?, title? }`. Returns `shareUrl` (once) and `profileLink`. |
+| `GET /learner/profile-links` | Learner | The learner's profile links, with status and credential titles. |
+| `DELETE /learner/profile-links/:id` | Learner | Turns a profile link off. |
+| `GET /profile/:token` | Anyone | Public HTML page. |
+| `GET /api/profile/:token` | Anyone | Same result as JSON: `status` is `VERIFIED`, `PARTLY_VERIFIED`, `LINK_EXPIRED`, `LINK_REVOKED` or `NOT_FOUND`, with a result for each credential. |
+
 When deployed to Render, `PUBLIC_BASE_URL` must be set to the deployed URL; the server refuses to start in production without it. Set the mobile app's `EXPO_PUBLIC_API_URL` to the Render API URL as well, then rebuild or restart the app.
 
 ## Verification note

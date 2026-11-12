@@ -40,12 +40,13 @@ model User {
   // The admin who approved this issuer (kept for accountability).
   issuerApprovedById String?
 
-  issuedCredentials  Credential[]  @relation("IssuedCredentials")
-  learnerCredentials Credential[]  @relation("LearnerCredentials")
+  issuedCredentials  Credential[]    @relation("IssuedCredentials")
+  learnerCredentials Credential[]    @relation("LearnerCredentials")
   shareLinks         ShareLink[]
-  rplEvidence        RplEvidence[] @relation("LearnerEvidence")
+  profileLinks       ProfileLink[]
+  rplEvidence        RplEvidence[]   @relation("LearnerEvidence")
   // Evidence learners have asked this issuer to review.
-  evidenceToReview   RplEvidence[] @relation("EvidenceReviewer")
+  evidenceToReview   RplEvidence[]   @relation("EvidenceReviewer")
   oneTimeCodes       OneTimeCode[]
   // Credential links this employer has checked.
   employerChecks     EmployerCheck[]
@@ -96,10 +97,11 @@ model Credential {
   learnerId String
   issuerId  String
 
-  learner            User                @relation("LearnerCredentials", fields: [learnerId], references: [id])
-  issuer             User                @relation("IssuedCredentials", fields: [issuerId], references: [id])
+  learner            User                    @relation("LearnerCredentials", fields: [learnerId], references: [id])
+  issuer             User                    @relation("IssuedCredentials", fields: [issuerId], references: [id])
   verificationEvents VerificationEvent[]
   shareLinks         ShareLink[]
+  profileLinkItems   ProfileLinkCredential[]
 }
 
 model ShareLink {
@@ -117,6 +119,37 @@ model ShareLink {
   verificationEvents VerificationEvent[]
   employerChecks     EmployerCheck[]
 
+  @@index([credentialId])
+}
+
+// A curated profile: one link (and QR code) that shares several of a learner's credentials.
+// Like ShareLink, only the SHA-256 hash of the random token is stored.
+model ProfileLink {
+  id              String    @id @default(cuid())
+  tokenHash       String    @unique
+  createdByUserId String
+  // Optional heading the learner chose, e.g. "Farm supervisor application". Shown on the public page.
+  title           String?
+  expiresAt       DateTime?
+  revokedAt       DateTime?
+  createdAt       DateTime  @default(now())
+
+  createdBy User                    @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+  items     ProfileLinkCredential[]
+
+  @@index([createdByUserId])
+}
+
+model ProfileLinkCredential {
+  profileLinkId String
+  credentialId  String
+  // The order the learner picked the credentials in.
+  position      Int
+
+  profileLink ProfileLink @relation(fields: [profileLinkId], references: [id], onDelete: Cascade)
+  credential  Credential  @relation(fields: [credentialId], references: [id], onDelete: Cascade)
+
+  @@id([profileLinkId, credentialId])
   @@index([credentialId])
 }
 
